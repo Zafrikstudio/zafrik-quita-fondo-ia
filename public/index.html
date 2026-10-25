@@ -1139,942 +1139,371 @@ select{
 
 
 <script>
-const file =
- document.getElementById("file");
+const API_URL = "https://zafrik-quita-fondo-ia.onrender.com";
 
-const drop =
- document.getElementById("drop");
-
-const before =
- document.getElementById("before");
-
-const after =
- document.getElementById("after");
-
-const processBtn =
- document.getElementById("process");
-
-const downloadBtn =
- document.getElementById("download");
-
-const statusBox =
- document.getElementById("status");
-
-const progressWrap =
- document.getElementById("progressWrap");
-
-const progressBar =
- document.getElementById("progressBar");
-
-const progressText =
- document.getElementById("progressText");
-
-const progressPercent =
- document.getElementById("progressPercent");
-
+const file = document.getElementById("file");
+const drop = document.getElementById("drop");
+const before = document.getElementById("before");
+const after = document.getElementById("after");
+const processBtn = document.getElementById("process");
+const downloadBtn = document.getElementById("download");
+const statusBox = document.getElementById("status");
+const progressWrap = document.getElementById("progressWrap");
+const progressBar = document.getElementById("progressBar");
+const progressText = document.getElementById("progressText");
+const progressPercent = document.getElementById("progressPercent");
+const statSize = document.getElementById("statSize");
+const statOutput = document.getElementById("statOutput");
+const statDPI = document.getElementById("statDPI");
+const statSemi = document.getElementById("statSemi");
+const analysisMessage = document.getElementById("analysisMessage");
 
 let selectedFile = null;
 let resultBlob = null;
 let resultURL = null;
-
+let beforeURL = null;
 let scale = 1;
 let mode = "DTF";
 
-let beforeURL = null;
-
-
-/* ===============================
-   ESTADO
-================================ */
-
-function showStatus(
- text,
- type = ""
-){
- statusBox.textContent = text;
-
- statusBox.className =
-  "status show " + type;
+function showStatus(text, type = "") {
+  statusBox.textContent = text;
+  statusBox.className = "status show " + type;
 }
 
-
-/* ===============================
-   PROGRESO
-================================ */
-
-function progress(
- value,
- text
-){
- progressWrap.classList.add("show");
-
- progressBar.style.width =
-  value + "%";
-
- progressPercent.textContent =
-  value + "%";
-
- progressText.textContent =
-  text;
+function progress(value, text) {
+  progressWrap.classList.add("show");
+  progressBar.style.width = value + "%";
+  progressPercent.textContent = value + "%";
+  progressText.textContent = text;
 }
 
-
-function hideProgress(){
-
- setTimeout(()=>{
-
-  progressWrap.classList.remove("show");
-
- },1000);
-
+function hideProgress() {
+  setTimeout(() => progressWrap.classList.remove("show"), 1200);
 }
 
-
-/* ===============================
-   CARGAR ARCHIVO
-================================ */
-
-async function loadFile(f){
-
- if(!f){
-  return;
- }
-
- if(
-  ![
-   "image/png",
-   "image/jpeg",
-   "image/webp"
-  ].includes(f.type)
- ){
-  showStatus(
-   "Formato no permitido. Usa PNG, JPG o WEBP.",
-   "error"
-  );
-
-  return;
- }
-
- if(
-  f.size >
-  15 * 1024 * 1024
- ){
-  showStatus(
-   "La imagen supera el límite de 15 MB.",
-   "error"
-  );
-
-  return;
- }
-
- selectedFile = f;
- resultBlob = null;
-
- downloadBtn.disabled = true;
-
- if(resultURL){
-  URL.revokeObjectURL(resultURL);
-  resultURL = null;
- }
-
- after.hidden = true;
-
- document
-  .getElementById("emptyAfter")
-  .hidden = false;
-
-
- if(beforeURL){
-  URL.revokeObjectURL(beforeURL);
- }
-
- beforeURL =
-  URL.createObjectURL(f);
-
- before.src = beforeURL;
- before.hidden = false;
-
- document
-  .getElementById("emptyBefore")
-  .hidden = true;
-
-
- showStatus(
-  "Analizando imagen..."
- );
-
-
- try{
-
-  const fd =
-   new FormData();
-
-  fd.append(
-   "imagen",
-   f
-  );
-
-
-  const response =
-   await fetch(
-    "/api/analizar",
-    {
-     method:"POST",
-     body:fd
-    }
-   );
-
-
-  const data =
-   await response.json();
-
-
-  if(!response.ok){
-
-   throw new Error(
-    data.error ||
-    "No se pudo analizar la imagen."
-   );
-
-  }
-
-
-  const i =
-   data.imagen;
-
-
-  document
-   .getElementById("statSize")
-   .textContent =
-   `${i.ancho} × ${i.alto}px`;
-
-
-  document
-   .getElementById("statOutput")
-   .textContent =
-   "Pendiente";
-
-
-  document
-   .getElementById("statDPI")
-   .textContent =
-   "Pendiente";
-
-
-  document
-   .getElementById("statSemi")
-   .textContent =
-   "Pendiente";
-
-
-  document
-   .getElementById("analysisMessage")
-   .innerHTML =
-   `Imagen detectada: <b>${i.megapixeles} MP</b> · ` +
-   `${String(i.formato).toUpperCase()} · ` +
-   `Transparencia original: <b>${i.alpha ? "Sí" : "No"}</b>. ` +
-   `Lista para procesar con ZAFRIK IA PRO.`;
-
-
-  showStatus(
-   "Imagen cargada correctamente.",
-   "good"
-  );
-
- }
- catch(error){
-
-  showStatus(
-   error.message,
-   "error"
-  );
-
- }
-
+function formatBytes(bytes) {
+  return (bytes / 1024 / 1024).toFixed(2) + " MB";
 }
 
-
-file.addEventListener(
- "change",
- ()=>{
-  loadFile(
-   file.files[0]
-  );
- }
-);
-
-
-/* ===============================
-   DRAG & DROP
-================================ */
-
-["dragenter","dragover"]
-.forEach(eventName=>{
-
- drop.addEventListener(
-  eventName,
-  e=>{
-
-   e.preventDefault();
-
-   drop.classList.add(
-    "drag"
-   );
-
-  }
- );
-
-});
-
-
-["dragleave","drop"]
-.forEach(eventName=>{
-
- drop.addEventListener(
-  eventName,
-  e=>{
-
-   e.preventDefault();
-
-   drop.classList.remove(
-    "drag"
-   );
-
-  }
- );
-
-});
-
-
-drop.addEventListener(
- "drop",
- e=>{
-
-  const f =
-   e.dataTransfer.files[0];
-
-  loadFile(f);
-
- }
-);
-
-
-/* ===============================
-   MODOS
-================================ */
-
-document
- .querySelectorAll(".mode")
- .forEach(button=>{
-
-  button.addEventListener(
-   "click",
-   ()=>{
-
-    document
-     .querySelectorAll(".mode")
-     .forEach(x=>
-      x.classList.remove(
-       "active"
-      )
-     );
-
-
-    button.classList.add(
-     "active"
-    );
-
-
-    mode =
-     button.dataset.mode;
-
-
-    /*
-      Las opciones especiales
-      solo aparecen en DTF.
-    */
-
-    document
-     .getElementById("dtfOptions")
-     .style.display =
-     mode === "DTF"
-      ? "grid"
-      : "none";
-
-   }
-  );
-
- });
-
-
-/* ===============================
-   ESCALA
-================================ */
-
-document
- .querySelectorAll(
-  ".scale button"
- )
- .forEach(button=>{
-
-  button.addEventListener(
-   "click",
-   ()=>{
-
-    document
-     .querySelectorAll(
-      ".scale button"
-     )
-     .forEach(x=>
-      x.classList.remove(
-       "active"
-      )
-     );
-
-
-    button.classList.add(
-     "active"
-    );
-
-
-    scale =
-     Number(
-      button.dataset.scale
-     );
-
-
-    document
-     .getElementById(
-      "scaleV"
-     )
-     .textContent =
-     scale + "X";
-
-   }
-  );
-
- });
-
-
-/* ===============================
-   SLIDERS
-================================ */
-
-[
- ["precision","precisionV","%"],
- ["halo","haloV","%"],
- ["edge","edgeV",""],
- ["sharp","sharpV","%"]
-]
-.forEach(item=>{
-
- const input =
-  document.getElementById(
-   item[0]
-  );
-
- const output =
-  document.getElementById(
-   item[1]
-  );
-
-
- input.addEventListener(
-  "input",
-  ()=>{
-
-   output.textContent =
-    input.value +
-    item[2];
-
-  }
- );
-
-});
-
-
-/* ===============================
-   FONDO DE PREVIEW
-================================ */
-
-document
- .querySelectorAll(
-  ".bgbtn"
- )
- .forEach(button=>{
-
-  button.addEventListener(
-   "click",
-   ()=>{
-
-    const bg =
-     button.dataset.bg;
-
-
-    document
-     .querySelectorAll(
-      ".viewer"
-     )
-     .forEach(viewer=>{
-
-      if(
-       bg === "trans"
-      ){
-
-       viewer.style.backgroundColor =
-        "#111";
-
-       viewer.style.backgroundImage =
-        "linear-gradient(45deg,#222 25%,transparent 25%)," +
-        "linear-gradient(-45deg,#222 25%,transparent 25%)," +
-        "linear-gradient(45deg,transparent 75%,#222 75%)," +
-        "linear-gradient(-45deg,transparent 75%,#222 75%)";
-
-       viewer.style.backgroundSize =
-        "22px 22px";
-
-       viewer.style.backgroundPosition =
-        "0 0,0 11px,11px -11px,-11px 0";
-
-      }
-      else{
-
-       viewer.style.backgroundImage =
-        "none";
-
-       viewer.style.backgroundColor =
-        bg;
-
-      }
-
-     });
-
-   }
-  );
-
- });
-
-
-/* ===============================
-   PROCESAR
-================================ */
-
-processBtn.addEventListener(
- "click",
- async ()=>{
-
-  if(!selectedFile){
-
-   showStatus(
-    "Primero debes subir una imagen.",
-    "error"
-   );
-
-   return;
+function getImageInfo(f) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+
+    img.onload = () => {
+      const info = {
+        width: img.naturalWidth,
+        height: img.naturalHeight
+      };
+      URL.revokeObjectURL(url);
+      resolve(info);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No se pudo leer la imagen seleccionada."));
+    };
+
+    img.src = url;
+  });
+}
+
+async function loadFile(f) {
+  if (!f) return;
+
+  const allowed = ["image/png", "image/jpeg", "image/webp"];
+
+  if (!allowed.includes(f.type)) {
+    showStatus("Formato no permitido. Usa PNG, JPG o WEBP.", "error");
+    return;
   }
 
+  if (f.size > 15 * 1024 * 1024) {
+    showStatus("La imagen supera el límite máximo de 15 MB.", "error");
+    return;
+  }
 
-  processBtn.disabled = true;
-
-  processBtn.textContent =
-   "⏳ PROCESANDO...";
-
+  selectedFile = f;
+  resultBlob = null;
   downloadBtn.disabled = true;
 
+  if (resultURL) {
+    URL.revokeObjectURL(resultURL);
+    resultURL = null;
+  }
 
-  try{
+  after.hidden = true;
+  document.getElementById("emptyAfter").hidden = false;
 
-   progress(
-    8,
-    "Preparando imagen..."
-   );
+  if (beforeURL) URL.revokeObjectURL(beforeURL);
 
+  beforeURL = URL.createObjectURL(f);
+  before.src = beforeURL;
+  before.hidden = false;
+  document.getElementById("emptyBefore").hidden = true;
 
-   const fd =
-    new FormData();
+  statOutput.textContent = "Pendiente";
+  statDPI.textContent = "Pendiente";
+  statSemi.textContent = "Pendiente";
 
+  showStatus("Analizando imagen...");
 
-   fd.append(
-    "imagen",
-    selectedFile
-   );
+  try {
+    const info = await getImageInfo(f);
+    const megapixels = ((info.width * info.height) / 1000000).toFixed(2);
 
+    statSize.textContent = `${info.width} × ${info.height}px`;
 
-   fd.append(
-    "modo",
-    mode
-   );
+    analysisMessage.innerHTML =
+      `Imagen detectada: <b>${megapixels} MP</b> · ` +
+      `${formatBytes(f.size)} · ` +
+      `${f.type.replace("image/", "").toUpperCase()} · ` +
+      `Lista para procesar con ZAFRIK IA PRO.`;
 
+    showStatus("Imagen cargada correctamente. Lista para procesar.", "good");
+  } catch (error) {
+    showStatus(error.message, "error");
+  }
+}
 
-   fd.append(
-    "precision",
-    document
-     .getElementById(
-      "precision"
-     ).value
-   );
+file.addEventListener("change", () => loadFile(file.files[0]));
 
+["dragenter", "dragover"].forEach(eventName => {
+  drop.addEventListener(eventName, e => {
+    e.preventDefault();
+    drop.classList.add("drag");
+  });
+});
 
-   fd.append(
-    "halo",
-    document
-     .getElementById(
-      "halo"
-     ).value
-   );
+["dragleave", "drop"].forEach(eventName => {
+  drop.addEventListener(eventName, e => {
+    e.preventDefault();
+    drop.classList.remove("drag");
+  });
+});
 
+drop.addEventListener("drop", e => {
+  const f = e.dataTransfer.files[0];
+  loadFile(f);
+});
 
-   fd.append(
-    "edge",
-    document
-     .getElementById(
-      "edge"
-     ).value
-   );
+document.querySelectorAll(".mode").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".mode").forEach(x => x.classList.remove("active"));
+    button.classList.add("active");
+    mode = button.dataset.mode;
 
+    document.getElementById("dtfOptions").style.display =
+      mode === "DTF" ? "grid" : "none";
+  });
+});
 
-   fd.append(
-    "nitidez",
-    document
-     .getElementById(
-      "sharp"
-     ).value
-   );
+document.querySelectorAll(".scale button").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".scale button").forEach(x => x.classList.remove("active"));
+    button.classList.add("active");
+    scale = Number(button.dataset.scale);
+    document.getElementById("scaleV").textContent = scale + "X";
+  });
+});
 
+[
+  ["precision", "precisionV", "%"],
+  ["halo", "haloV", "%"],
+  ["edge", "edgeV", ""],
+  ["sharp", "sharpV", "%"]
+].forEach(item => {
+  const input = document.getElementById(item[0]);
+  const output = document.getElementById(item[1]);
 
-   fd.append(
-    "escala",
-    String(scale)
-   );
+  input.addEventListener("input", () => {
+    output.textContent = input.value + item[2];
+  });
+});
 
+document.querySelectorAll(".bgbtn").forEach(button => {
+  button.addEventListener("click", () => {
+    const bg = button.dataset.bg;
 
-   fd.append(
-    "nivelDTF",
-    document
-     .getElementById(
-      "nivelDTF"
-     ).value
-   );
+    document.querySelectorAll(".viewer").forEach(viewer => {
+      if (bg === "trans") {
+        viewer.style.backgroundColor = "#111";
+        viewer.style.backgroundImage =
+          "linear-gradient(45deg,#222 25%,transparent 25%)," +
+          "linear-gradient(-45deg,#222 25%,transparent 25%)," +
+          "linear-gradient(45deg,transparent 75%,#222 75%)," +
+          "linear-gradient(-45deg,transparent 75%,#222 75%)";
+        viewer.style.backgroundSize = "22px 22px";
+        viewer.style.backgroundPosition = "0 0,0 11px,11px -11px,-11px 0";
+      } else {
+        viewer.style.backgroundImage = "none";
+        viewer.style.backgroundColor = bg;
+      }
+    });
+  });
+});
 
+async function readServerError(response) {
+  const clone = response.clone();
 
-   fd.append(
-    "conservarDetalles",
-    document
-     .getElementById(
-      "details"
-     ).checked
-     ? "true"
-     : "false"
-   );
-
-
-   progress(
-    25,
-    "IA eliminando fondo..."
-   );
-
-
-   showStatus(
-    "ZAFRIK IA PRO está procesando la imagen..."
-   );
-
-
-   /*
-     La barra es visual.
-     El backend realiza todo
-     el proceso en una petición.
-   */
-
-   const timer1 =
-    setTimeout(
-     ()=>progress(
-      48,
-      "Limpiando bordes y halo..."
-     ),
-     1500
-    );
-
-
-   const timer2 =
-    setTimeout(
-     ()=>progress(
-      68,
-      "Mejorando imagen..."
-     ),
-     3000
-    );
-
-
-   const timer3 =
-    setTimeout(
-     ()=>progress(
-      82,
-      "Preparando resolución..."
-     ),
-     4500
-    );
-
-
-   const response =
-    await fetch(
-     "/api/quitar-fondo",
-     {
-      method:"POST",
-      body:fd
-     }
-    );
-
-
-   clearTimeout(timer1);
-   clearTimeout(timer2);
-   clearTimeout(timer3);
-
-
-   if(!response.ok){
-
-    let message =
-     "No fue posible procesar la imagen.";
-
-
-    try{
-
-     const data =
-      await response.json();
-
-     message =
-      data.error ||
-      message;
-
+  try {
+    const data = await response.json();
+    if (data.detail) {
+      return typeof data.detail === "string"
+        ? data.detail
+        : JSON.stringify(data.detail);
     }
-    catch{}
+    if (data.error) return typeof data.error === "string" ? data.error : JSON.stringify(data.error);
+    if (data.message) return data.message;
+  } catch (_) {}
 
+  try {
+    const text = await clone.text();
+    if (text) return text.slice(0, 500);
+  } catch (_) {}
 
-    throw new Error(
-     message
-    );
+  return `No fue posible procesar la imagen. Error ${response.status}.`;
+}
 
-   }
-
-
-   progress(
-    92,
-    "Generando PNG 300 DPI..."
-   );
-
-
-   resultBlob =
-    await response.blob();
-
-
-   if(resultURL){
-
-    URL.revokeObjectURL(
-     resultURL
-    );
-
-   }
-
-
-   resultURL =
-    URL.createObjectURL(
-     resultBlob
-    );
-
-
-   after.src =
-    resultURL;
-
-   after.hidden =
-    false;
-
-
-   document
-    .getElementById(
-     "emptyAfter"
-    )
-    .hidden =
-    true;
-
-
-   /*
-     HEADERS DE ANALISIS
-   */
-
-   const width =
-    response.headers.get(
-     "X-Zafrik-Width"
-    );
-
-   const height =
-    response.headers.get(
-     "X-Zafrik-Height"
-    );
-
-   const dpi =
-    response.headers.get(
-     "X-Zafrik-DPI"
-    ) || "300";
-
-   const semiBefore =
-    response.headers.get(
-     "X-Zafrik-Semi-Before"
-    );
-
-   const semiAfter =
-    response.headers.get(
-     "X-Zafrik-Semi-After"
-    );
-
-
-   document
-    .getElementById(
-     "statOutput"
-    )
-    .textContent =
-    width && height
-     ? `${width} × ${height}px`
-     : `${scale}X`;
-
-
-   document
-    .getElementById(
-     "statDPI"
-    )
-    .textContent =
-    dpi + " DPI";
-
-
-   if(
-    semiBefore !== null &&
-    semiAfter !== null
-   ){
-
-    document
-     .getElementById(
-      "statSemi"
-     )
-     .textContent =
-     Number(
-      semiAfter
-     ).toLocaleString();
-
-
-    document
-     .getElementById(
-      "analysisMessage"
-     )
-     .innerHTML =
-     `Fondo eliminado con IA ✓ · ` +
-     `Transparencia real ✓ · ` +
-     `Bordes analizados ✓ · ` +
-     `Píxeles semitransparentes: ` +
-     `<b>${Number(semiBefore).toLocaleString()}</b> → ` +
-     `<b>${Number(semiAfter).toLocaleString()}</b>.`;
-
-   }
-   else{
-
-    document
-     .getElementById(
-      "analysisMessage"
-     )
-     .textContent =
-     "Procesamiento terminado correctamente.";
-
-   }
-
-
-   downloadBtn.disabled =
-    false;
-
-
-   progress(
-    100,
-    "¡Archivo listo!"
-   );
-
-
-   showStatus(
-    "Procesamiento terminado. PNG transparente preparado correctamente.",
-    "good"
-   );
-
-
-   hideProgress();
-
-  }
-  catch(error){
-
-   progressBar.style.width =
-    "0%";
-
-
-   showStatus(
-    error.message,
-    "error"
-   );
-
-
-   hideProgress();
-
-  }
-  finally{
-
-   processBtn.disabled =
-    false;
-
-   processBtn.textContent =
-    "✨ PROCESAR CON IA PRO";
-
+processBtn.addEventListener("click", async () => {
+  if (!selectedFile) {
+    showStatus("Primero debes subir una imagen.", "error");
+    return;
   }
 
- }
-);
+  processBtn.disabled = true;
+  processBtn.textContent = "⏳ PROCESANDO...";
+  downloadBtn.disabled = true;
 
+  let timers = [];
 
-/* ===============================
-   DESCARGAR
-================================ */
+  try {
+    progress(8, "Preparando imagen...");
 
-downloadBtn.addEventListener(
- "click",
- ()=>{
+    const fd = new FormData();
 
-  if(
-   !resultBlob ||
-   !resultURL
-  ){
-   return;
+    // Nombres exactos que espera main.py V5.2
+    fd.append("image", selectedFile, selectedFile.name);
+    fd.append("scale", String(scale));
+    fd.append("sharpness", document.getElementById("sharp").value);
+    fd.append("mode", mode);
+
+    progress(20, "Enviando imagen al servidor...");
+    showStatus("ZAFRIK IA PRO está procesando la imagen...");
+
+    timers.push(setTimeout(() => progress(38, "IA eliminando fondo..."), 900));
+    timers.push(setTimeout(() => progress(58, "Preparando transparencia..."), 2200));
+    timers.push(setTimeout(() => progress(72, "Mejorando imagen..."), 3800));
+    timers.push(setTimeout(() => progress(84, "Preparando resolución final..."), 5500));
+
+    const response = await fetch(API_URL + "/api/process", {
+      method: "POST",
+      body: fd
+    });
+
+    timers.forEach(clearTimeout);
+    timers = [];
+
+    if (!response.ok) {
+      throw new Error(await readServerError(response));
+    }
+
+    progress(92, "Generando PNG transparente...");
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().includes("image/png")) {
+      throw new Error("El servidor no devolvió un PNG válido.");
+    }
+
+    resultBlob = await response.blob();
+
+    if (!resultBlob || resultBlob.size === 0) {
+      throw new Error("El servidor devolvió un archivo vacío.");
+    }
+
+    if (resultURL) URL.revokeObjectURL(resultURL);
+    resultURL = URL.createObjectURL(resultBlob);
+
+    after.src = resultURL;
+    after.hidden = false;
+    document.getElementById("emptyAfter").hidden = true;
+
+    const finalWidth = response.headers.get("X-Final-Width");
+    const finalHeight = response.headers.get("X-Final-Height");
+    const realScale = response.headers.get("X-Scale-Applied") || scale;
+    const dpi = response.headers.get("X-DPI") || "300";
+
+    statOutput.textContent =
+      finalWidth && finalHeight
+        ? `${finalWidth} × ${finalHeight}px`
+        : `${realScale}X`;
+
+    statDPI.textContent = `${dpi} DPI`;
+    statSemi.textContent = "Procesado";
+
+    analysisMessage.innerHTML =
+      `Fondo eliminado con IA ✓ · Transparencia real ✓ · ` +
+      `Modo <b>${mode}</b> · Escala aplicada <b>${realScale}X</b> · ` +
+      `<b>${dpi} DPI</b>.`;
+
+    downloadBtn.disabled = false;
+
+    progress(100, "¡Archivo listo!");
+
+    showStatus(
+      "Procesamiento terminado. PNG transparente preparado correctamente.",
+      "good"
+    );
+
+    hideProgress();
+
+  } catch (error) {
+    timers.forEach(clearTimeout);
+    progressBar.style.width = "0%";
+
+    showStatus(
+      error.message || "No fue posible procesar la imagen.",
+      "error"
+    );
+
+    hideProgress();
+  } finally {
+    processBtn.disabled = false;
+    processBtn.textContent = "✨ PROCESAR CON IA PRO";
   }
+});
 
+downloadBtn.addEventListener("click", () => {
+  if (!resultBlob || !resultURL) return;
 
-  const a =
-   document.createElement(
-    "a"
-   );
-
-
-  a.href =
-   resultURL;
-
-
-  a.download =
-   "ZAFRIK-IA-PRO-300DPI.png";
-
-
-  document.body.appendChild(
-   a
-  );
-
-
+  const a = document.createElement("a");
+  a.href = resultURL;
+  a.download = "ZAFRIK-IA-PRO-300DPI.png";
+  document.body.appendChild(a);
   a.click();
-
-
   a.remove();
+});
 
- }
-);
+async function checkServer() {
+  try {
+    const response = await fetch(API_URL + "/api/status", {
+      cache: "no-store"
+    });
 
+    if (!response.ok) return;
+
+    const data = await response.json();
+    console.log("ZAFRIK IA PRO:", data);
+
+    if (data.ok && data.remove_bg_configured) {
+      console.log("Servidor y remove.bg listos.");
+    }
+  } catch (error) {
+    console.log("Servidor iniciando o temporalmente dormido.");
+  }
+}
+
+checkServer();
 </script>
 
 </body>
