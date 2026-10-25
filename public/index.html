@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZAFRIK | Quita Fondo IA PRO</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ font-family:Arial,Helvetica,sans-serif;
+ background:#080713;
+ color:#fff;
+}
+.app{
+ max-width:1150px;
+ margin:30px auto;
+ padding:20px;
+}
+.hero{
+ background:
+ radial-gradient(circle at 85% 10%,rgba(255,0,128,.18),transparent 30%),
+ radial-gradient(circle at 10% 20%,rgba(0,229,255,.14),transparent 32%),
+ #0d0b19;
+ border:1px solid #28233d;
+ border-radius:24px;
+ padding:30px;
+}
+.badge{
+ display:inline-block;
+ padding:7px 13px;
+ border-radius:30px;
+ font-size:12px;
+ font-weight:900;
+ background:linear-gradient(90deg,#00e5ff,#7c3cff,#ff168d);
+}
+h1{
+ font-size:44px;
+ line-height:1;
+ margin:15px 0 8px;
+}
+.grad{
+ background:linear-gradient(90deg,#00e5ff,#7b61ff,#ff168d,#ff9d00);
+ -webkit-background-clip:text;
+ color:transparent;
+}
+.sub{
+ color:#aaa5bf;
+ max-width:700px;
+ line-height:1.6;
+}
+.upload{
+ margin-top:25px;
+ border:2px dashed #4a4368;
+ padding:32px;
+ border-radius:18px;
+ text-align:center;
+ cursor:pointer;
+ background:#0a0914;
+ transition:.2s;
+}
+.upload:hover{
+ border-color:#8d52ff;
+ background:#100d1d;
+}
+.upload strong{
+ display:block;
+ font-size:20px;
+ margin-bottom:8px;
+}
+input[type=file]{display:none}
+
+.panel{
+ margin-top:18px;
+ background:#0d0b19;
+ border:1px solid #292440;
+ border-radius:20px;
+ padding:20px;
+}
+.title{
+ font-weight:900;
+ margin-bottom:15px;
+ font-size:16px;
+}
+.modes{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:10px;
+}
+.mode{
+ border:1px solid #393252;
+ background:#12101f;
+ color:#ddd;
+ padding:14px;
+ border-radius:12px;
+ cursor:pointer;
+ font-weight:bold;
+}
+.mode.active{
+ border-color:#8c4dff;
+ background:linear-gradient(135deg,#32205d,#19132d);
+ color:#fff;
+}
+
+.controls{
+ display:grid;
+ grid-template-columns:repeat(2,1fr);
+ gap:18px;
+ margin-top:20px;
+}
+.control{
+ background:#0a0913;
+ border:1px solid #27223a;
+ border-radius:14px;
+ padding:14px;
+}
+.label{
+ display:flex;
+ justify-content:space-between;
+ font-size:12px;
+ font-weight:bold;
+ margin-bottom:10px;
+}
+.value{color:#a879ff}
+input[type=range]{
+ width:100%;
+ accent-color:#8c4dff;
+}
+
+.scale{
+ display:grid;
+ grid-template-columns:repeat(4,1fr);
+ gap:8px;
+}
+.scale button,
+.bgbtn{
+ border:1px solid #39334f;
+ background:#11101c;
+ color:white;
+ padding:10px;
+ border-radius:10px;
+ cursor:pointer;
+}
+.scale button.active{
+ background:#8d43ff;
+ border-color:#8d43ff;
+}
+
+.previewHead{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:10px;
+ flex-wrap:wrap;
+}
+.bgs{
+ display:flex;
+ gap:7px;
+}
+.bgbtn{
+ width:32px;
+ height:32px;
+ padding:0;
+ border-radius:50%;
+}
+.bg-trans{
+ background:
+ linear-gradient(45deg,#bbb 25%,transparent 25%),
+ linear-gradient(-45deg,#bbb 25%,transparent 25%),
+ linear-gradient(45deg,transparent 75%,#bbb 75%),
+ linear-gradient(-45deg,transparent 75%,#bbb 75%);
+ background-size:10px 10px;
+ background-position:0 0,0 5px,5px -5px,-5px 0;
+}
+.bg-white{background:white}
+.bg-black{background:black}
+.bg-pink{background:#ff2b69}
+
+.preview{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:12px;
+ margin-top:15px;
+}
+.viewer{
+ min-height:390px;
+ border:1px solid #2d2841;
+ border-radius:15px;
+ overflow:hidden;
+ position:relative;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ background-color:#111;
+ background-image:
+ linear-gradient(45deg,#222 25%,transparent 25%),
+ linear-gradient(-45deg,#222 25%,transparent 25%),
+ linear-gradient(45deg,transparent 75%,#222 75%),
+ linear-gradient(-45deg,transparent 75%,#222 75%);
+ background-size:22px 22px;
+ background-position:0 0,0 11px,11px -11px,-11px 0;
+}
+.viewer img{
+ max-width:100%;
+ max-height:500px;
+ object-fit:contain;
+}
+.tag{
+ position:absolute;
+ left:10px;
+ top:10px;
+ background:rgba(0,0,0,.75);
+ padding:6px 10px;
+ border-radius:20px;
+ font-size:11px;
+ font-weight:bold;
+}
+.empty{
+ color:#77718e;
+ text-align:center;
+ padding:20px;
+}
+
+.actions{
+ display:grid;
+ grid-template-columns:2fr 1fr;
+ gap:10px;
+ margin-top:18px;
+}
+.process{
+ border:0;
+ padding:17px;
+ border-radius:13px;
+ font-size:15px;
+ font-weight:900;
+ cursor:pointer;
+ color:white;
+ background:linear-gradient(90deg,#245cff,#8c3cff,#ff176d);
+}
+.download{
+ border:1px solid #423b5e;
+ padding:17px;
+ border-radius:13px;
+ font-weight:bold;
+ cursor:pointer;
+ color:white;
+ background:#141121;
+}
+.download:disabled{
+ opacity:.35;
+ cursor:not-allowed;
+}
+
+.status{
+ display:none;
+ margin-top:15px;
+ border-radius:13px;
+ padding:14px;
+ background:#11101c;
+ border:1px solid #332c49;
+ color:#c4bfd2;
+ font-size:13px;
+}
+.status.show{display:block}
+.status.good{
+ border-color:#0b886e;
+ color:#68ffd6;
+}
+.status.error{
+ border-color:#9f2547;
+ color:#ff809f;
+}
+
+.dtf{
+ margin-top:18px;
+ padding:18px;
+ border-radius:16px;
+ background:linear-gradient(135deg,#111425,#160d22);
+ border:1px solid #302950;
+}
+.dtf h3{
+ margin:0 0 7px;
+}
+.dtf p{
+ color:#aaa5bb;
+ font-size:13px;
+ line-height:1.5;
+ margin-bottom:0;
+}
+
+@media(max-width:750px){
+ h1{font-size:34px}
+ .controls,.preview{grid-template-columns:1fr}
+ .modes{grid-template-columns:1fr}
+ .actions{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+<div class="hero">
+
+<span class="badge">ZAFRIK IA PRO</span>
+
+<h1>
+Quita el fondo.<br>
+<span class="grad">Prepara tu diseño.</span>
+</h1>
+
+<p class="sub">
+Elimina fondos, mejora la imagen y prepara archivos para
+DTF, DTG y sublimación. Procesamiento profesional con salida
+PNG transparente y hasta 4X de resolución.
+</p>
+
+<label class="upload" id="drop">
+<input type="file" id="file" accept="image/png,image/jpeg,image/webp">
+<strong>⬆ SUBIR IMAGEN</strong>
+<span>PNG · JPG · WEBP — máximo 15 MB</span>
+</label>
+
+</div>
+
+<div class="panel">
+
+<div class="title">MODO DE IMPRESIÓN</div>
+
+<div class="modes">
+<button class="mode active" data-mode="DTF">DTF</button>
+<button class="mode" data-mode="DTG">DTG</button>
+<button class="mode" data-mode="SUBLIMACION">SUBLIMACIÓN</button>
+</div>
+
+<div class="controls">
+
+<div class="control">
+<div class="label">
+<span>Precisión IA</span>
+<span class="value" id="precisionV">90%</span>
+</div>
+<input id="precision" type="range" min="50" max="100" value="90">
+</div>
+
+<div class="control">
+<div class="label">
+<span>Suavizado de borde</span>
+<span class="value" id="smoothV">15%</span>
+</div>
+<input id="smooth" type="range" min="0" max="100" value="15">
+</div>
+
+<div class="control">
+<div class="label">
+<span>Contraer / expandir borde</span>
+<span class="value" id="edgeV">0</span>
+</div>
+<input id="edge" type="range" min="-10" max="10" value="0">
+</div>
+
+<div class="control">
+<div class="label">
+<span>Eliminar halo</span>
+<span class="value" id="haloV">70%</span>
+</div>
+<input id="halo" type="range" min="0" max="100" value="70">
+</div>
+
+<div class="control">
+<div class="label">
+<span>Nitidez</span>
+<span class="value" id="sharpV">35%</span>
+</div>
+<input id="sharp" type="range" min="0" max="100" value="35">
+</div>
+
+<div class="control">
+<div class="label">
+<span>Resolución de salida</span>
+<span class="value" id="scaleV">1X</span>
+</div>
+
+<div class="scale">
+<button class="active" data-scale="1">1X</button>
+<button data-scale="2">2X</button>
+<button data-scale="3">3X</button>
+<button data-scale="4">4X</button>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="panel">
+
+<div class="previewHead">
+<div class="title">VISTA PREVIA</div>
+
+<div class="bgs">
+<button class="bgbtn bg-trans" data-bg="trans"></button>
+<button class="bgbtn bg-white" data-bg="white"></button>
+<button class="bgbtn bg-black" data-bg="black"></button>
+<button class="bgbtn bg-pink" data-bg="#ff2b69"></button>
+</div>
+</div>
+
+<div class="preview">
+
+<div class="viewer">
+<span class="tag">ANTES</span>
+<div class="empty" id="emptyBefore">
+Sube una imagen para comenzar
+</div>
+<img id="before" hidden>
+</div>
+
+<div class="viewer resultViewer">
+<span class="tag">DESPUÉS</span>
+<div class="empty" id="emptyAfter">
+El resultado aparecerá aquí
+</div>
+<img id="after" hidden>
+</div>
+
+</div>
+
+<div class="actions">
+
+<button class="process" id="process">
+✨ PROCESAR CON IA
+</button>
+
+<button class="download" id="download" disabled>
+DESCARGAR PNG
+</button>
+
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="dtf">
+<h3>🔎 ANÁLISIS DTF PRO</h3>
+<p id="analysis">
+Cuando proceses una imagen, ZAFRIK analizará el archivo para
+detectar transparencia, resolución y posibles problemas en los
+bordes antes de prepararlo para impresión.
+</p>
+</div>
+
+</div>
+</div>
+
+<script>
+
+const file=document.getElementById("file");
+const before=document.getElementById("before");
+const after=document.getElementById("after");
+const statusBox=document.getElementById("status");
+const download=document.getElementById("download");
+
+let selectedFile=null;
+let resultBlob=null;
+let scale=1;
+let mode="DTF";
+
+function status(text,type=""){
+ statusBox.textContent=text;
+ statusBox.className="status show "+type;
+}
+
+file.addEventListener("change",async()=>{
+
+ const f=file.files[0];
+ if(!f)return;
+
+ selectedFile=f;
+ resultBlob=null;
+
+ download.disabled=true;
+ after.hidden=true;
+
+ document.getElementById("emptyAfter").hidden=false;
+
+ before.src=URL.createObjectURL(f);
+ before.hidden=false;
+ document.getElementById("emptyBefore").hidden=true;
+
+ status("Analizando imagen...");
+
+ try{
+
+  const fd=new FormData();
+  fd.append("imagen",f);
+
+  const r=await fetch("/api/analizar",{
+   method:"POST",
+   body:fd
+  });
+
+  const data=await r.json();
+
+  if(!r.ok)throw new Error(data.error||"Error");
+
+  const i=data.imagen;
+
+  document.getElementById("analysis").innerHTML=
+  "<b>Archivo detectado:</b> "+
+  i.ancho+" × "+i.alto+" px · "+
+  String(i.formato).toUpperCase()+
+  " · Transparencia: "+(i.alpha?"Sí":"No")+
+  ".<br>Listo para enviar al motor ZAFRIK IA.";
+
+  status("Imagen cargada correctamente.","good");
+
+ }catch(e){
+
+  status(e.message,"error");
+
+ }
+
+});
+
+document.querySelectorAll(".mode").forEach(b=>{
+
+ b.onclick=()=>{
+
+  document.querySelectorAll(".mode")
+   .forEach(x=>x.classList.remove("active"));
+
+  b.classList.add("active");
+  mode=b.dataset.mode;
+
+ };
+
+});
+
+document.querySelectorAll(".scale button").forEach(b=>{
+
+ b.onclick=()=>{
+
+  document.querySelectorAll(".scale button")
+   .forEach(x=>x.classList.remove("active"));
+
+  b.classList.add("active");
+
+  scale=Number(b.dataset.scale);
+
+  document.getElementById("scaleV").textContent=
+   scale+"X";
+
+ };
+
+});
+
+[
+ ["precision","precisionV","%"],
+ ["smooth","smoothV","%"],
+ ["edge","edgeV",""],
+ ["halo","haloV","%"],
+ ["sharp","sharpV","%"]
+].forEach(x=>{
+
+ const input=document.getElementById(x[0]);
+ const value=document.getElementById(x[1]);
+
+ input.oninput=()=>{
+  value.textContent=input.value+x[2];
+ };
+
+});
+
+document.querySelectorAll(".bgbtn").forEach(b=>{
+
+ b.onclick=()=>{
+
+  const bg=b.dataset.bg;
+
+  document.querySelectorAll(".viewer").forEach(v=>{
+
+   if(bg==="trans"){
+
+    v.style.backgroundColor="#111";
+
+    v.style.backgroundImage=
+    "linear-gradient(45deg,#222 25%,transparent 25%),"+
+    "linear-gradient(-45deg,#222 25%,transparent 25%),"+
+    "linear-gradient(45deg,transparent 75%,#222 75%),"+
+    "linear-gradient(-45deg,transparent 75%,#222 75%)";
+
+   }else{
+
+    v.style.backgroundImage="none";
+    v.style.backgroundColor=bg;
+
+   }
+
+  });
+
+ };
+
+});
+
+document.getElementById("process").onclick=async()=>{
+
+ if(!selectedFile){
+
+  status("Primero debes seleccionar una imagen.","error");
+  return;
+
+ }
+
+ const btn=document.getElementById("process");
+
+ btn.disabled=true;
+ btn.textContent="⏳ PROCESANDO...";
+
+ try{
+
+  /*
+   PRIMERA ETAPA:
+   Intentamos quitar el fondo mediante
+   el endpoint IA.
+  */
+
+  let fd=new FormData();
+
+  fd.append("imagen",selectedFile);
+  fd.append("modo",mode);
+  fd.append("precision",document.getElementById("precision").value);
+  fd.append("smooth",document.getElementById("smooth").value);
+  fd.append("edge",document.getElementById("edge").value);
+  fd.append("halo",document.getElementById("halo").value);
+
+  status("ZAFRIK IA está procesando la imagen...");
+
+  let response=await fetch("/api/quitar-fondo",{
+   method:"POST",
+   body:fd
+  });
+
+  /*
+   Mientras conectamos el modelo IA,
+   utilizamos la mejora como prueba
+   del servidor.
+  */
+
+  if(response.status===503){
+
+   fd=new FormData();
+
+   fd.append("imagen",selectedFile);
+   fd.append("escala",scale);
+
+   response=await fetch("/api/mejorar",{
+    method:"POST",
+    body:fd
+   });
+
+   if(!response.ok){
+    throw new Error("No fue posible procesar la imagen.");
+   }
+
+   resultBlob=await response.blob();
+
+   after.src=URL.createObjectURL(resultBlob);
+   after.hidden=false;
+
+   document.getElementById("emptyAfter").hidden=true;
+
+   download.disabled=false;
+
+   status(
+    "Servidor funcionando. La mejora de imagen está activa; falta conectar el motor de eliminación de fondo IA.",
+    "good"
+   );
+
+   return;
+  }
+
+  if(!response.ok){
+
+   const data=await response.json();
+   throw new Error(data.error||"Error de procesamiento");
+
+  }
+
+  resultBlob=await response.blob();
+
+  after.src=URL.createObjectURL(resultBlob);
+  after.hidden=false;
+
+  document.getElementById("emptyAfter").hidden=true;
+
+  download.disabled=false;
+
+  status(
+   "Procesamiento IA terminado correctamente.",
+   "good"
+  );
+
+ }catch(e){
+
+  status(e.message,"error");
+
+ }finally{
+
+  btn.disabled=false;
+  btn.textContent="✨ PROCESAR CON IA";
+
+ }
+
+};
+
+download.onclick=()=>{
+
+ if(!resultBlob)return;
+
+ const a=document.createElement("a");
+
+ a.href=URL.createObjectURL(resultBlob);
+ a.download="ZAFRIK-IA-PRO.png";
+
+ a.click();
+
+};
+
+</script>
+
+</body>
+</html>
