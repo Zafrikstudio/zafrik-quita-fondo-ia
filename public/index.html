@@ -3,59 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | Quita Fondo IA PRO</title>
+<title>ZAFRIK | Quita Fondo IA PRO V3</title>
 
 <style>
 *{box-sizing:border-box}
+
+:root{
+ --bg:#070611;
+ --panel:#0d0b19;
+ --panel2:#11101e;
+ --line:#2c2740;
+ --text:#fff;
+ --muted:#aaa5bd;
+ --purple:#8c43ff;
+ --pink:#ff176d;
+ --cyan:#00dcff;
+}
+
 body{
  margin:0;
  font-family:Arial,Helvetica,sans-serif;
- background:#080713;
- color:#fff;
+ background:
+ radial-gradient(circle at 10% 0%,rgba(0,220,255,.06),transparent 25%),
+ radial-gradient(circle at 90% 15%,rgba(255,23,109,.06),transparent 25%),
+ var(--bg);
+ color:var(--text);
 }
+
+button,input,select{
+ font:inherit;
+}
+
 .app{
- max-width:1150px;
- margin:30px auto;
- padding:20px;
+ width:min(1180px,calc(100% - 24px));
+ margin:25px auto 60px;
 }
+
+/* HERO */
+
 .hero{
  background:
- radial-gradient(circle at 85% 10%,rgba(255,0,128,.18),transparent 30%),
- radial-gradient(circle at 10% 20%,rgba(0,229,255,.14),transparent 32%),
+ radial-gradient(circle at 85% 10%,rgba(255,0,128,.17),transparent 32%),
+ radial-gradient(circle at 8% 10%,rgba(0,229,255,.14),transparent 30%),
  #0d0b19;
 
  border:1px solid #28233d;
  border-radius:24px;
  padding:30px;
-
  width:100%;
  height:auto;
- min-height:0;
  overflow:visible;
 }
+
 .badge{
- display:inline-block;
- padding:7px 13px;
+ display:inline-flex;
+ align-items:center;
+ padding:8px 14px;
  border-radius:30px;
  font-size:12px;
  font-weight:900;
- background:linear-gradient(90deg,#00e5ff,#7c3cff,#ff168d);
+ background:linear-gradient(90deg,#00dfff,#7855ff,#ff168d);
 }
+
 h1{
- font-size:44px;
+ margin:16px 0 10px;
+ font-size:46px;
  line-height:1;
- margin:15px 0 8px;
+ letter-spacing:-1px;
 }
+
 .grad{
- background:linear-gradient(90deg,#00e5ff,#7b61ff,#ff168d,#ff9d00);
+ background:linear-gradient(90deg,#00e5ff,#526bff,#d92fff,#ff176d,#ff9d00);
  -webkit-background-clip:text;
+ background-clip:text;
  color:transparent;
 }
+
 .sub{
  color:#aaa5bf;
- max-width:700px;
+ max-width:760px;
  line-height:1.6;
+ margin-bottom:0;
 }
+
+/* UPLOAD */
+
 .upload{
  margin-top:25px;
  width:100%;
@@ -84,6 +116,11 @@ h1{
  transform:translateY(-1px);
 }
 
+.upload.drag{
+ border-color:#00dcff;
+ background:#0d1722;
+}
+
 .upload strong{
  display:block;
  width:100%;
@@ -106,127 +143,260 @@ input[type=file]{
  display:none;
 }
 
+/* PANEL */
+
 .panel{
  margin-top:18px;
- background:#0d0b19;
- border:1px solid #292440;
+ background:var(--panel);
+ border:1px solid var(--line);
  border-radius:20px;
  padding:20px;
 }
-.title{
+
+.sectionTitle{
  font-weight:900;
- margin-bottom:15px;
- font-size:16px;
+ font-size:15px;
+ margin-bottom:14px;
 }
+
+.small{
+ color:var(--muted);
+ font-size:12px;
+ line-height:1.5;
+}
+
+/* MODOS */
+
 .modes{
  display:grid;
  grid-template-columns:repeat(3,1fr);
  gap:10px;
 }
+
 .mode{
  border:1px solid #393252;
  background:#12101f;
- color:#ddd;
- padding:14px;
- border-radius:12px;
+ color:#c7c3d1;
+ padding:15px;
+ border-radius:13px;
  cursor:pointer;
- font-weight:bold;
+ font-weight:900;
+ transition:.2s;
 }
+
+.mode:hover{
+ border-color:#685b8f;
+}
+
 .mode.active{
- border-color:#8c4dff;
- background:linear-gradient(135deg,#32205d,#19132d);
  color:#fff;
+ border-color:#8c4dff;
+ background:
+ linear-gradient(135deg,#39206c,#201638);
+ box-shadow:0 0 0 1px rgba(140,77,255,.15);
 }
+
+/* CONTROLES */
 
 .controls{
  display:grid;
- grid-template-columns:repeat(2,1fr);
- gap:18px;
- margin-top:20px;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:14px;
+ margin-top:18px;
 }
+
 .control{
- background:#0a0913;
+ background:#090812;
  border:1px solid #27223a;
- border-radius:14px;
- padding:14px;
+ border-radius:15px;
+ padding:15px;
 }
+
 .label{
  display:flex;
+ align-items:center;
  justify-content:space-between;
+ gap:10px;
  font-size:12px;
- font-weight:bold;
- margin-bottom:10px;
+ font-weight:900;
+ margin-bottom:11px;
 }
-.value{color:#a879ff}
+
+.value{
+ color:#aa79ff;
+}
+
 input[type=range]{
  width:100%;
  accent-color:#8c4dff;
+ cursor:pointer;
 }
+
+/* ESCALA */
 
 .scale{
  display:grid;
  grid-template-columns:repeat(4,1fr);
- gap:8px;
+ gap:7px;
 }
-.scale button,
-.bgbtn{
+
+.scale button{
  border:1px solid #39334f;
  background:#11101c;
- color:white;
- padding:10px;
+ color:#fff;
+ padding:10px 6px;
+ border-radius:9px;
+ cursor:pointer;
+ font-weight:900;
+}
+
+.scale button.active{
+ background:linear-gradient(135deg,#6c39e9,#a344ff);
+ border-color:#9b5bff;
+}
+
+/* DTF */
+
+.dtfOptions{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:14px;
+ margin-top:14px;
+}
+
+.selectBox{
+ background:#090812;
+ border:1px solid #27223a;
+ border-radius:15px;
+ padding:15px;
+}
+
+.selectBox label{
+ display:block;
+ font-size:12px;
+ font-weight:900;
+ margin-bottom:10px;
+}
+
+select{
+ width:100%;
+ border:1px solid #39334f;
+ background:#12101f;
+ color:#fff;
  border-radius:10px;
+ padding:11px;
+ outline:none;
+}
+
+.toggle{
+ min-height:100%;
+ display:flex;
+ align-items:center;
+ gap:12px;
  cursor:pointer;
 }
-.scale button.active{
- background:#8d43ff;
- border-color:#8d43ff;
+
+.toggle input{
+ display:none;
 }
+
+.switch{
+ width:48px;
+ height:26px;
+ background:#343044;
+ border-radius:30px;
+ position:relative;
+ flex:0 0 auto;
+ transition:.2s;
+}
+
+.switch:after{
+ content:"";
+ width:20px;
+ height:20px;
+ border-radius:50%;
+ background:#fff;
+ position:absolute;
+ top:3px;
+ left:3px;
+ transition:.2s;
+}
+
+.toggle input:checked + .switch{
+ background:linear-gradient(90deg,#7044ff,#ff2878);
+}
+
+.toggle input:checked + .switch:after{
+ transform:translateX(22px);
+}
+
+.toggleText strong{
+ display:block;
+ font-size:13px;
+ margin-bottom:4px;
+}
+
+.toggleText span{
+ color:#9994aa;
+ font-size:11px;
+ line-height:1.4;
+}
+
+/* PREVIEW */
 
 .previewHead{
  display:flex;
  justify-content:space-between;
  align-items:center;
- gap:10px;
+ gap:15px;
  flex-wrap:wrap;
 }
+
 .bgs{
  display:flex;
  gap:7px;
 }
+
 .bgbtn{
  width:32px;
  height:32px;
- padding:0;
  border-radius:50%;
+ border:1px solid #504967;
+ cursor:pointer;
+ padding:0;
 }
+
 .bg-trans{
  background:
- linear-gradient(45deg,#bbb 25%,transparent 25%),
- linear-gradient(-45deg,#bbb 25%,transparent 25%),
- linear-gradient(45deg,transparent 75%,#bbb 75%),
- linear-gradient(-45deg,transparent 75%,#bbb 75%);
+ linear-gradient(45deg,#aaa 25%,transparent 25%),
+ linear-gradient(-45deg,#aaa 25%,transparent 25%),
+ linear-gradient(45deg,transparent 75%,#aaa 75%),
+ linear-gradient(-45deg,transparent 75%,#aaa 75%);
  background-size:10px 10px;
  background-position:0 0,0 5px,5px -5px,-5px 0;
 }
-.bg-white{background:white}
-.bg-black{background:black}
+
+.bg-white{background:#fff}
+.bg-black{background:#000}
 .bg-pink{background:#ff2b69}
 
 .preview{
  display:grid;
  grid-template-columns:1fr 1fr;
  gap:12px;
- margin-top:15px;
+ margin-top:12px;
 }
+
 .viewer{
- min-height:390px;
+ min-height:430px;
  border:1px solid #2d2841;
- border-radius:15px;
+ border-radius:16px;
  overflow:hidden;
  position:relative;
  display:flex;
- justify-content:center;
  align-items:center;
+ justify-content:center;
+
  background-color:#111;
  background-image:
  linear-gradient(45deg,#222 25%,transparent 25%),
@@ -236,33 +406,42 @@ input[type=range]{
  background-size:22px 22px;
  background-position:0 0,0 11px,11px -11px,-11px 0;
 }
+
 .viewer img{
+ display:block;
  max-width:100%;
- max-height:500px;
+ max-height:600px;
  object-fit:contain;
 }
+
 .tag{
  position:absolute;
  left:10px;
  top:10px;
- background:rgba(0,0,0,.75);
+ z-index:3;
+ background:rgba(0,0,0,.78);
+ border:1px solid rgba(255,255,255,.08);
  padding:6px 10px;
  border-radius:20px;
  font-size:11px;
- font-weight:bold;
+ font-weight:900;
 }
+
 .empty{
  color:#77718e;
  text-align:center;
  padding:20px;
 }
 
+/* BOTONES */
+
 .actions{
  display:grid;
  grid-template-columns:2fr 1fr;
  gap:10px;
- margin-top:18px;
+ margin-top:16px;
 }
+
 .process{
  border:0;
  padding:17px;
@@ -270,65 +449,209 @@ input[type=range]{
  font-size:15px;
  font-weight:900;
  cursor:pointer;
- color:white;
- background:linear-gradient(90deg,#245cff,#8c3cff,#ff176d);
+ color:#fff;
+ background:
+ linear-gradient(90deg,#1d74ff,#7b42ff,#ff176d);
+ transition:.2s;
 }
+
+.process:hover{
+ transform:translateY(-1px);
+ filter:brightness(1.06);
+}
+
+.process:disabled{
+ opacity:.6;
+ cursor:wait;
+ transform:none;
+}
+
 .download{
  border:1px solid #423b5e;
  padding:17px;
  border-radius:13px;
- font-weight:bold;
+ font-weight:900;
  cursor:pointer;
- color:white;
+ color:#fff;
  background:#141121;
 }
+
 .download:disabled{
  opacity:.35;
  cursor:not-allowed;
 }
 
-.status{
+/* PROGRESO */
+
+.progressWrap{
  display:none;
  margin-top:15px;
+ padding:15px;
+ border-radius:14px;
+ border:1px solid #302b45;
+ background:#0a0913;
+}
+
+.progressWrap.show{
+ display:block;
+}
+
+.progressTop{
+ display:flex;
+ justify-content:space-between;
+ gap:10px;
+ font-size:12px;
+ font-weight:900;
+ margin-bottom:9px;
+}
+
+.progress{
+ height:8px;
+ background:#211d30;
+ border-radius:20px;
+ overflow:hidden;
+}
+
+.progressBar{
+ height:100%;
+ width:0%;
+ border-radius:20px;
+ background:linear-gradient(90deg,#00dcff,#794aff,#ff176d);
+ transition:width .35s ease;
+}
+
+/* STATUS */
+
+.status{
+ display:none;
+ margin-top:14px;
  border-radius:13px;
  padding:14px;
  background:#11101c;
  border:1px solid #332c49;
  color:#c4bfd2;
  font-size:13px;
+ line-height:1.5;
 }
+
 .status.show{display:block}
+
 .status.good{
  border-color:#0b886e;
  color:#68ffd6;
 }
+
 .status.error{
  border-color:#9f2547;
  color:#ff809f;
 }
 
-.dtf{
- margin-top:18px;
+/* ANALISIS */
+
+.analysis{
+ margin-top:17px;
  padding:18px;
  border-radius:16px;
- background:linear-gradient(135deg,#111425,#160d22);
+ background:
+ linear-gradient(135deg,#101526,#160d22);
  border:1px solid #302950;
 }
-.dtf h3{
- margin:0 0 7px;
-}
-.dtf p{
- color:#aaa5bb;
- font-size:13px;
- line-height:1.5;
- margin-bottom:0;
+
+.analysisTitle{
+ display:flex;
+ align-items:center;
+ gap:8px;
+ font-size:16px;
+ font-weight:900;
+ margin-bottom:13px;
 }
 
-@media(max-width:750px){
- h1{font-size:34px}
- .controls,.preview{grid-template-columns:1fr}
- .modes{grid-template-columns:1fr}
- .actions{grid-template-columns:1fr}
+.analysisGrid{
+ display:grid;
+ grid-template-columns:repeat(4,1fr);
+ gap:9px;
+}
+
+.stat{
+ background:rgba(0,0,0,.22);
+ border:1px solid #29233d;
+ border-radius:12px;
+ padding:12px;
+}
+
+.stat span{
+ display:block;
+ color:#8f899f;
+ font-size:10px;
+ text-transform:uppercase;
+ font-weight:900;
+ margin-bottom:5px;
+}
+
+.stat strong{
+ display:block;
+ font-size:14px;
+ word-break:break-word;
+}
+
+.analysisMessage{
+ margin-top:12px;
+ color:#aaa5bb;
+ font-size:12px;
+ line-height:1.55;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:800px){
+
+ .app{
+  width:min(100% - 14px,1180px);
+  margin-top:8px;
+ }
+
+ .hero{
+  padding:20px;
+ }
+
+ h1{
+  font-size:36px;
+ }
+
+ .controls,
+ .dtfOptions,
+ .preview{
+  grid-template-columns:1fr;
+ }
+
+ .modes{
+  grid-template-columns:1fr;
+ }
+
+ .actions{
+  grid-template-columns:1fr;
+ }
+
+ .analysisGrid{
+  grid-template-columns:1fr 1fr;
+ }
+
+ .viewer{
+  min-height:320px;
+ }
+
+}
+
+@media(max-width:450px){
+
+ h1{
+  font-size:31px;
+ }
+
+ .analysisGrid{
+  grid-template-columns:1fr;
+ }
+
 }
 </style>
 </head>
@@ -336,430 +659,1421 @@ input[type=range]{
 <body>
 
 <div class="app">
-<div class="hero">
 
-<span class="badge">ZAFRIK IA PRO</span>
+<!-- HERO -->
 
-<h1>
-Quita el fondo.<br>
-<span class="grad">Prepara tu diseño.</span>
-</h1>
+<section class="hero">
 
-<p class="sub">
-Elimina fondos, mejora la imagen y prepara archivos para
-DTF, DTG y sublimación. Procesamiento profesional con salida
-PNG transparente y hasta 4X de resolución.
-</p>
+ <span class="badge">
+  ZAFRIK IA PRO V3
+ </span>
 
-<label class="upload" id="drop">
-<input type="file" id="file" accept="image/png,image/jpeg,image/webp">
-<strong>⬆ SUBIR IMAGEN</strong>
-<span>PNG · JPG · WEBP — máximo 15 MB</span>
-</label>
+ <h1>
+  Quita el fondo.<br>
+  <span class="grad">
+   Prepara tu diseño.
+  </span>
+ </h1>
+
+ <p class="sub">
+  Eliminación de fondo con IA, limpieza profesional de bordes,
+  preparación DTF, mejora de imagen y salida PNG transparente
+  hasta 4X con metadatos de 300 DPI.
+ </p>
+
+ <label class="upload" id="drop">
+
+  <input
+   type="file"
+   id="file"
+   accept="image/png,image/jpeg,image/webp"
+  >
+
+  <strong>
+   ↑ SUBIR IMAGEN
+  </strong>
+
+  <span>
+   PNG · JPG · WEBP — máximo 15 MB
+  </span>
+
+ </label>
+
+</section>
+
+
+<!-- CONFIGURACION -->
+
+<section class="panel">
+
+ <div class="sectionTitle">
+  MODO DE IMPRESIÓN
+ </div>
+
+ <div class="modes">
+
+  <button
+   class="mode active"
+   data-mode="DTF"
+  >
+   DTF
+  </button>
+
+  <button
+   class="mode"
+   data-mode="DTG"
+  >
+   DTG
+  </button>
+
+  <button
+   class="mode"
+   data-mode="SUBLIMACION"
+  >
+   SUBLIMACIÓN
+  </button>
+
+ </div>
+
+
+ <div class="controls">
+
+  <div class="control">
+
+   <div class="label">
+    <span>Precisión IA</span>
+    <span class="value" id="precisionV">
+     90%
+    </span>
+   </div>
+
+   <input
+    id="precision"
+    type="range"
+    min="50"
+    max="100"
+    value="90"
+   >
+
+  </div>
+
+
+  <div class="control">
+
+   <div class="label">
+    <span>Eliminar halo</span>
+    <span class="value" id="haloV">
+     70%
+    </span>
+   </div>
+
+   <input
+    id="halo"
+    type="range"
+    min="0"
+    max="100"
+    value="70"
+   >
+
+  </div>
+
+
+  <div class="control">
+
+   <div class="label">
+    <span>Contraer / expandir borde</span>
+    <span class="value" id="edgeV">
+     0
+    </span>
+   </div>
+
+   <input
+    id="edge"
+    type="range"
+    min="-10"
+    max="10"
+    value="0"
+   >
+
+  </div>
+
+
+  <div class="control">
+
+   <div class="label">
+    <span>Nitidez</span>
+    <span class="value" id="sharpV">
+     35%
+    </span>
+   </div>
+
+   <input
+    id="sharp"
+    type="range"
+    min="0"
+    max="100"
+    value="35"
+   >
+
+  </div>
+
+
+  <div class="control">
+
+   <div class="label">
+    <span>Resolución final</span>
+    <span class="value" id="scaleV">
+     1X
+    </span>
+   </div>
+
+   <div class="scale">
+
+    <button
+     class="active"
+     data-scale="1"
+    >
+     1X
+    </button>
+
+    <button data-scale="2">
+     2X
+    </button>
+
+    <button data-scale="3">
+     3X
+    </button>
+
+    <button data-scale="4">
+     4X
+    </button>
+
+   </div>
+
+  </div>
+
+
+  <div class="control">
+
+   <div class="label">
+    <span>Salida</span>
+    <span class="value">
+     PNG
+    </span>
+   </div>
+
+   <div class="small">
+    Transparencia real · Alta calidad · 300 DPI
+   </div>
+
+  </div>
+
+ </div>
+
+
+ <!-- OPCIONES DTF -->
+
+ <div class="dtfOptions" id="dtfOptions">
+
+  <div class="selectBox">
+
+   <label for="nivelDTF">
+    LIMPIEZA DTF
+   </label>
+
+   <select id="nivelDTF">
+
+    <option value="suave">
+     Suave — fotografías y cabello
+    </option>
+
+    <option
+     value="normal"
+     selected
+    >
+     Normal — uso general
+    </option>
+
+    <option value="fuerte">
+     Fuerte — logos y diseños sólidos
+    </option>
+
+   </select>
+
+  </div>
+
+
+  <div class="selectBox">
+
+   <label class="toggle">
+
+    <input
+     type="checkbox"
+     id="details"
+     checked
+    >
+
+    <span class="switch"></span>
+
+    <span class="toggleText">
+
+     <strong>
+      Conservar detalles finos
+     </strong>
+
+     <span>
+      Protege cabello, pelaje y bordes delicados.
+     </span>
+
+    </span>
+
+   </label>
+
+  </div>
+
+ </div>
+
+</section>
+
+
+<!-- PREVIEW -->
+
+<section class="panel">
+
+ <div class="previewHead">
+
+  <div class="sectionTitle">
+   VISTA PREVIA
+  </div>
+
+  <div class="bgs">
+
+   <button
+    class="bgbtn bg-trans"
+    data-bg="trans"
+    title="Transparente"
+   ></button>
+
+   <button
+    class="bgbtn bg-white"
+    data-bg="white"
+    title="Blanco"
+   ></button>
+
+   <button
+    class="bgbtn bg-black"
+    data-bg="black"
+    title="Negro"
+   ></button>
+
+   <button
+    class="bgbtn bg-pink"
+    data-bg="#ff2b69"
+    title="Color"
+   ></button>
+
+  </div>
+
+ </div>
+
+
+ <div class="preview">
+
+  <div class="viewer">
+
+   <span class="tag">
+    ANTES
+   </span>
+
+   <div
+    class="empty"
+    id="emptyBefore"
+   >
+    Sube una imagen para comenzar
+   </div>
+
+   <img
+    id="before"
+    alt=""
+    hidden
+   >
+
+  </div>
+
+
+  <div class="viewer">
+
+   <span class="tag">
+    DESPUÉS
+   </span>
+
+   <div
+    class="empty"
+    id="emptyAfter"
+   >
+    El resultado aparecerá aquí
+   </div>
+
+   <img
+    id="after"
+    alt=""
+    hidden
+   >
+
+  </div>
+
+ </div>
+
+
+ <!-- ACCIONES -->
+
+ <div class="actions">
+
+  <button
+   class="process"
+   id="process"
+  >
+   ✨ PROCESAR CON IA PRO
+  </button>
+
+  <button
+   class="download"
+   id="download"
+   disabled
+  >
+   DESCARGAR PNG
+  </button>
+
+ </div>
+
+
+ <!-- PROGRESO -->
+
+ <div
+  class="progressWrap"
+  id="progressWrap"
+ >
+
+  <div class="progressTop">
+
+   <span id="progressText">
+    Preparando...
+   </span>
+
+   <span id="progressPercent">
+    0%
+   </span>
+
+  </div>
+
+  <div class="progress">
+
+   <div
+    class="progressBar"
+    id="progressBar"
+   ></div>
+
+  </div>
+
+ </div>
+
+
+ <div
+  class="status"
+  id="status"
+ ></div>
+
+
+ <!-- ANALISIS -->
+
+ <div class="analysis">
+
+  <div class="analysisTitle">
+   🔎 ANÁLISIS DTF PRO
+  </div>
+
+  <div class="analysisGrid">
+
+   <div class="stat">
+    <span>Archivo</span>
+    <strong id="statSize">
+     —
+    </strong>
+   </div>
+
+   <div class="stat">
+    <span>Salida</span>
+    <strong id="statOutput">
+     —
+    </strong>
+   </div>
+
+   <div class="stat">
+    <span>DPI</span>
+    <strong id="statDPI">
+     —
+    </strong>
+   </div>
+
+   <div class="stat">
+    <span>Semitransparentes</span>
+    <strong id="statSemi">
+     —
+    </strong>
+   </div>
+
+  </div>
+
+  <div
+   class="analysisMessage"
+   id="analysisMessage"
+  >
+   Sube una imagen para analizarla antes de imprimir.
+  </div>
+
+ </div>
+
+</section>
 
 </div>
 
-<div class="panel">
-
-<div class="title">MODO DE IMPRESIÓN</div>
-
-<div class="modes">
-<button class="mode active" data-mode="DTF">DTF</button>
-<button class="mode" data-mode="DTG">DTG</button>
-<button class="mode" data-mode="SUBLIMACION">SUBLIMACIÓN</button>
-</div>
-
-<div class="controls">
-
-<div class="control">
-<div class="label">
-<span>Precisión IA</span>
-<span class="value" id="precisionV">90%</span>
-</div>
-<input id="precision" type="range" min="50" max="100" value="90">
-</div>
-
-<div class="control">
-<div class="label">
-<span>Suavizado de borde</span>
-<span class="value" id="smoothV">15%</span>
-</div>
-<input id="smooth" type="range" min="0" max="100" value="15">
-</div>
-
-<div class="control">
-<div class="label">
-<span>Contraer / expandir borde</span>
-<span class="value" id="edgeV">0</span>
-</div>
-<input id="edge" type="range" min="-10" max="10" value="0">
-</div>
-
-<div class="control">
-<div class="label">
-<span>Eliminar halo</span>
-<span class="value" id="haloV">70%</span>
-</div>
-<input id="halo" type="range" min="0" max="100" value="70">
-</div>
-
-<div class="control">
-<div class="label">
-<span>Nitidez</span>
-<span class="value" id="sharpV">35%</span>
-</div>
-<input id="sharp" type="range" min="0" max="100" value="35">
-</div>
-
-<div class="control">
-<div class="label">
-<span>Resolución de salida</span>
-<span class="value" id="scaleV">1X</span>
-</div>
-
-<div class="scale">
-<button class="active" data-scale="1">1X</button>
-<button data-scale="2">2X</button>
-<button data-scale="3">3X</button>
-<button data-scale="4">4X</button>
-</div>
-</div>
-
-</div>
-</div>
-
-<div class="panel">
-
-<div class="previewHead">
-<div class="title">VISTA PREVIA</div>
-
-<div class="bgs">
-<button class="bgbtn bg-trans" data-bg="trans"></button>
-<button class="bgbtn bg-white" data-bg="white"></button>
-<button class="bgbtn bg-black" data-bg="black"></button>
-<button class="bgbtn bg-pink" data-bg="#ff2b69"></button>
-</div>
-</div>
-
-<div class="preview">
-
-<div class="viewer">
-<span class="tag">ANTES</span>
-<div class="empty" id="emptyBefore">
-Sube una imagen para comenzar
-</div>
-<img id="before" hidden>
-</div>
-
-<div class="viewer resultViewer">
-<span class="tag">DESPUÉS</span>
-<div class="empty" id="emptyAfter">
-El resultado aparecerá aquí
-</div>
-<img id="after" hidden>
-</div>
-
-</div>
-
-<div class="actions">
-
-<button class="process" id="process">
-✨ PROCESAR CON IA
-</button>
-
-<button class="download" id="download" disabled>
-DESCARGAR PNG
-</button>
-
-</div>
-
-<div class="status" id="status"></div>
-
-<div class="dtf">
-<h3>🔎 ANÁLISIS DTF PRO</h3>
-<p id="analysis">
-Cuando proceses una imagen, ZAFRIK analizará el archivo para
-detectar transparencia, resolución y posibles problemas en los
-bordes antes de prepararlo para impresión.
-</p>
-</div>
-
-</div>
-</div>
 
 <script>
+const file =
+ document.getElementById("file");
 
-const file=document.getElementById("file");
-const before=document.getElementById("before");
-const after=document.getElementById("after");
-const statusBox=document.getElementById("status");
-const download=document.getElementById("download");
+const drop =
+ document.getElementById("drop");
 
-let selectedFile=null;
-let resultBlob=null;
-let scale=1;
-let mode="DTF";
+const before =
+ document.getElementById("before");
 
-function status(text,type=""){
- statusBox.textContent=text;
- statusBox.className="status show "+type;
+const after =
+ document.getElementById("after");
+
+const processBtn =
+ document.getElementById("process");
+
+const downloadBtn =
+ document.getElementById("download");
+
+const statusBox =
+ document.getElementById("status");
+
+const progressWrap =
+ document.getElementById("progressWrap");
+
+const progressBar =
+ document.getElementById("progressBar");
+
+const progressText =
+ document.getElementById("progressText");
+
+const progressPercent =
+ document.getElementById("progressPercent");
+
+
+let selectedFile = null;
+let resultBlob = null;
+let resultURL = null;
+
+let scale = 1;
+let mode = "DTF";
+
+let beforeURL = null;
+
+
+/* ===============================
+   ESTADO
+================================ */
+
+function showStatus(
+ text,
+ type = ""
+){
+ statusBox.textContent = text;
+
+ statusBox.className =
+  "status show " + type;
 }
 
-file.addEventListener("change",async()=>{
 
- const f=file.files[0];
- if(!f)return;
+/* ===============================
+   PROGRESO
+================================ */
 
- selectedFile=f;
- resultBlob=null;
+function progress(
+ value,
+ text
+){
+ progressWrap.classList.add("show");
 
- download.disabled=true;
- after.hidden=true;
+ progressBar.style.width =
+  value + "%";
 
- document.getElementById("emptyAfter").hidden=false;
+ progressPercent.textContent =
+  value + "%";
 
- before.src=URL.createObjectURL(f);
- before.hidden=false;
- document.getElementById("emptyBefore").hidden=true;
+ progressText.textContent =
+  text;
+}
 
- status("Analizando imagen...");
+
+function hideProgress(){
+
+ setTimeout(()=>{
+
+  progressWrap.classList.remove("show");
+
+ },1000);
+
+}
+
+
+/* ===============================
+   CARGAR ARCHIVO
+================================ */
+
+async function loadFile(f){
+
+ if(!f){
+  return;
+ }
+
+ if(
+  ![
+   "image/png",
+   "image/jpeg",
+   "image/webp"
+  ].includes(f.type)
+ ){
+  showStatus(
+   "Formato no permitido. Usa PNG, JPG o WEBP.",
+   "error"
+  );
+
+  return;
+ }
+
+ if(
+  f.size >
+  15 * 1024 * 1024
+ ){
+  showStatus(
+   "La imagen supera el límite de 15 MB.",
+   "error"
+  );
+
+  return;
+ }
+
+ selectedFile = f;
+ resultBlob = null;
+
+ downloadBtn.disabled = true;
+
+ if(resultURL){
+  URL.revokeObjectURL(resultURL);
+  resultURL = null;
+ }
+
+ after.hidden = true;
+
+ document
+  .getElementById("emptyAfter")
+  .hidden = false;
+
+
+ if(beforeURL){
+  URL.revokeObjectURL(beforeURL);
+ }
+
+ beforeURL =
+  URL.createObjectURL(f);
+
+ before.src = beforeURL;
+ before.hidden = false;
+
+ document
+  .getElementById("emptyBefore")
+  .hidden = true;
+
+
+ showStatus(
+  "Analizando imagen..."
+ );
+
 
  try{
 
-  const fd=new FormData();
-  fd.append("imagen",f);
+  const fd =
+   new FormData();
 
-  const r=await fetch("/api/analizar",{
-   method:"POST",
-   body:fd
-  });
+  fd.append(
+   "imagen",
+   f
+  );
 
-  const data=await r.json();
 
-  if(!r.ok)throw new Error(data.error||"Error");
+  const response =
+   await fetch(
+    "/api/analizar",
+    {
+     method:"POST",
+     body:fd
+    }
+   );
 
-  const i=data.imagen;
 
-  document.getElementById("analysis").innerHTML=
-  "<b>Archivo detectado:</b> "+
-  i.ancho+" × "+i.alto+" px · "+
-  String(i.formato).toUpperCase()+
-  " · Transparencia: "+(i.alpha?"Sí":"No")+
-  ".<br>Listo para enviar al motor ZAFRIK IA.";
+  const data =
+   await response.json();
 
-  status("Imagen cargada correctamente.","good");
 
- }catch(e){
+  if(!response.ok){
 
-  status(e.message,"error");
+   throw new Error(
+    data.error ||
+    "No se pudo analizar la imagen."
+   );
+
+  }
+
+
+  const i =
+   data.imagen;
+
+
+  document
+   .getElementById("statSize")
+   .textContent =
+   `${i.ancho} × ${i.alto}px`;
+
+
+  document
+   .getElementById("statOutput")
+   .textContent =
+   "Pendiente";
+
+
+  document
+   .getElementById("statDPI")
+   .textContent =
+   "Pendiente";
+
+
+  document
+   .getElementById("statSemi")
+   .textContent =
+   "Pendiente";
+
+
+  document
+   .getElementById("analysisMessage")
+   .innerHTML =
+   `Imagen detectada: <b>${i.megapixeles} MP</b> · ` +
+   `${String(i.formato).toUpperCase()} · ` +
+   `Transparencia original: <b>${i.alpha ? "Sí" : "No"}</b>. ` +
+   `Lista para procesar con ZAFRIK IA PRO.`;
+
+
+  showStatus(
+   "Imagen cargada correctamente.",
+   "good"
+  );
+
+ }
+ catch(error){
+
+  showStatus(
+   error.message,
+   "error"
+  );
 
  }
 
+}
+
+
+file.addEventListener(
+ "change",
+ ()=>{
+  loadFile(
+   file.files[0]
+  );
+ }
+);
+
+
+/* ===============================
+   DRAG & DROP
+================================ */
+
+["dragenter","dragover"]
+.forEach(eventName=>{
+
+ drop.addEventListener(
+  eventName,
+  e=>{
+
+   e.preventDefault();
+
+   drop.classList.add(
+    "drag"
+   );
+
+  }
+ );
+
 });
 
-document.querySelectorAll(".mode").forEach(b=>{
 
- b.onclick=()=>{
+["dragleave","drop"]
+.forEach(eventName=>{
 
-  document.querySelectorAll(".mode")
-   .forEach(x=>x.classList.remove("active"));
+ drop.addEventListener(
+  eventName,
+  e=>{
 
-  b.classList.add("active");
-  mode=b.dataset.mode;
+   e.preventDefault();
 
- };
+   drop.classList.remove(
+    "drag"
+   );
 
-});
-
-document.querySelectorAll(".scale button").forEach(b=>{
-
- b.onclick=()=>{
-
-  document.querySelectorAll(".scale button")
-   .forEach(x=>x.classList.remove("active"));
-
-  b.classList.add("active");
-
-  scale=Number(b.dataset.scale);
-
-  document.getElementById("scaleV").textContent=
-   scale+"X";
-
- };
+  }
+ );
 
 });
+
+
+drop.addEventListener(
+ "drop",
+ e=>{
+
+  const f =
+   e.dataTransfer.files[0];
+
+  loadFile(f);
+
+ }
+);
+
+
+/* ===============================
+   MODOS
+================================ */
+
+document
+ .querySelectorAll(".mode")
+ .forEach(button=>{
+
+  button.addEventListener(
+   "click",
+   ()=>{
+
+    document
+     .querySelectorAll(".mode")
+     .forEach(x=>
+      x.classList.remove(
+       "active"
+      )
+     );
+
+
+    button.classList.add(
+     "active"
+    );
+
+
+    mode =
+     button.dataset.mode;
+
+
+    /*
+      Las opciones especiales
+      solo aparecen en DTF.
+    */
+
+    document
+     .getElementById("dtfOptions")
+     .style.display =
+     mode === "DTF"
+      ? "grid"
+      : "none";
+
+   }
+  );
+
+ });
+
+
+/* ===============================
+   ESCALA
+================================ */
+
+document
+ .querySelectorAll(
+  ".scale button"
+ )
+ .forEach(button=>{
+
+  button.addEventListener(
+   "click",
+   ()=>{
+
+    document
+     .querySelectorAll(
+      ".scale button"
+     )
+     .forEach(x=>
+      x.classList.remove(
+       "active"
+      )
+     );
+
+
+    button.classList.add(
+     "active"
+    );
+
+
+    scale =
+     Number(
+      button.dataset.scale
+     );
+
+
+    document
+     .getElementById(
+      "scaleV"
+     )
+     .textContent =
+     scale + "X";
+
+   }
+  );
+
+ });
+
+
+/* ===============================
+   SLIDERS
+================================ */
 
 [
  ["precision","precisionV","%"],
- ["smooth","smoothV","%"],
- ["edge","edgeV",""],
  ["halo","haloV","%"],
+ ["edge","edgeV",""],
  ["sharp","sharpV","%"]
-].forEach(x=>{
+]
+.forEach(item=>{
 
- const input=document.getElementById(x[0]);
- const value=document.getElementById(x[1]);
+ const input =
+  document.getElementById(
+   item[0]
+  );
 
- input.oninput=()=>{
-  value.textContent=input.value+x[2];
- };
+ const output =
+  document.getElementById(
+   item[1]
+  );
 
-});
 
-document.querySelectorAll(".bgbtn").forEach(b=>{
+ input.addEventListener(
+  "input",
+  ()=>{
 
- b.onclick=()=>{
+   output.textContent =
+    input.value +
+    item[2];
 
-  const bg=b.dataset.bg;
-
-  document.querySelectorAll(".viewer").forEach(v=>{
-
-   if(bg==="trans"){
-
-    v.style.backgroundColor="#111";
-
-    v.style.backgroundImage=
-    "linear-gradient(45deg,#222 25%,transparent 25%),"+
-    "linear-gradient(-45deg,#222 25%,transparent 25%),"+
-    "linear-gradient(45deg,transparent 75%,#222 75%),"+
-    "linear-gradient(-45deg,transparent 75%,#222 75%)";
-
-   }else{
-
-    v.style.backgroundImage="none";
-    v.style.backgroundColor=bg;
-
-   }
-
-  });
-
- };
+  }
+ );
 
 });
 
-document.getElementById("process").onclick=async()=>{
 
- if(!selectedFile){
+/* ===============================
+   FONDO DE PREVIEW
+================================ */
 
-  status("Primero debes seleccionar una imagen.","error");
-  return;
+document
+ .querySelectorAll(
+  ".bgbtn"
+ )
+ .forEach(button=>{
 
- }
+  button.addEventListener(
+   "click",
+   ()=>{
 
- const btn=document.getElementById("process");
+    const bg =
+     button.dataset.bg;
 
- btn.disabled=true;
- btn.textContent="⏳ PROCESANDO...";
 
- try{
+    document
+     .querySelectorAll(
+      ".viewer"
+     )
+     .forEach(viewer=>{
 
-  /*
-   PRIMERA ETAPA:
-   Intentamos quitar el fondo mediante
-   el endpoint IA.
-  */
+      if(
+       bg === "trans"
+      ){
 
-  let fd=new FormData();
+       viewer.style.backgroundColor =
+        "#111";
 
-  fd.append("imagen",selectedFile);
-  fd.append("modo",mode);
-  fd.append("precision",document.getElementById("precision").value);
-  fd.append("smooth",document.getElementById("smooth").value);
-  fd.append("edge",document.getElementById("edge").value);
-  fd.append("halo",document.getElementById("halo").value);
+       viewer.style.backgroundImage =
+        "linear-gradient(45deg,#222 25%,transparent 25%)," +
+        "linear-gradient(-45deg,#222 25%,transparent 25%)," +
+        "linear-gradient(45deg,transparent 75%,#222 75%)," +
+        "linear-gradient(-45deg,transparent 75%,#222 75%)";
 
-  status("ZAFRIK IA está procesando la imagen...");
+       viewer.style.backgroundSize =
+        "22px 22px";
 
-  let response=await fetch("/api/quitar-fondo",{
-   method:"POST",
-   body:fd
-  });
+       viewer.style.backgroundPosition =
+        "0 0,0 11px,11px -11px,-11px 0";
 
-  /*
-   Mientras conectamos el modelo IA,
-   utilizamos la mejora como prueba
-   del servidor.
-  */
+      }
+      else{
 
-  if(response.status===503){
+       viewer.style.backgroundImage =
+        "none";
 
-   fd=new FormData();
+       viewer.style.backgroundColor =
+        bg;
 
-   fd.append("imagen",selectedFile);
-   fd.append("escala",scale);
+      }
 
-   response=await fetch("/api/mejorar",{
-    method:"POST",
-    body:fd
-   });
+     });
 
-   if(!response.ok){
-    throw new Error("No fue posible procesar la imagen.");
    }
+  );
 
-   resultBlob=await response.blob();
+ });
 
-   after.src=URL.createObjectURL(resultBlob);
-   after.hidden=false;
 
-   document.getElementById("emptyAfter").hidden=true;
+/* ===============================
+   PROCESAR
+================================ */
 
-   download.disabled=false;
+processBtn.addEventListener(
+ "click",
+ async ()=>{
 
-   status(
-    "Servidor funcionando. La mejora de imagen está activa; falta conectar el motor de eliminación de fondo IA.",
-    "good"
+  if(!selectedFile){
+
+   showStatus(
+    "Primero debes subir una imagen.",
+    "error"
    );
 
    return;
   }
 
-  if(!response.ok){
 
-   const data=await response.json();
-   throw new Error(data.error||"Error de procesamiento");
+  processBtn.disabled = true;
+
+  processBtn.textContent =
+   "⏳ PROCESANDO...";
+
+  downloadBtn.disabled = true;
+
+
+  try{
+
+   progress(
+    8,
+    "Preparando imagen..."
+   );
+
+
+   const fd =
+    new FormData();
+
+
+   fd.append(
+    "imagen",
+    selectedFile
+   );
+
+
+   fd.append(
+    "modo",
+    mode
+   );
+
+
+   fd.append(
+    "precision",
+    document
+     .getElementById(
+      "precision"
+     ).value
+   );
+
+
+   fd.append(
+    "halo",
+    document
+     .getElementById(
+      "halo"
+     ).value
+   );
+
+
+   fd.append(
+    "edge",
+    document
+     .getElementById(
+      "edge"
+     ).value
+   );
+
+
+   fd.append(
+    "nitidez",
+    document
+     .getElementById(
+      "sharp"
+     ).value
+   );
+
+
+   fd.append(
+    "escala",
+    String(scale)
+   );
+
+
+   fd.append(
+    "nivelDTF",
+    document
+     .getElementById(
+      "nivelDTF"
+     ).value
+   );
+
+
+   fd.append(
+    "conservarDetalles",
+    document
+     .getElementById(
+      "details"
+     ).checked
+     ? "true"
+     : "false"
+   );
+
+
+   progress(
+    25,
+    "IA eliminando fondo..."
+   );
+
+
+   showStatus(
+    "ZAFRIK IA PRO está procesando la imagen..."
+   );
+
+
+   /*
+     La barra es visual.
+     El backend realiza todo
+     el proceso en una petición.
+   */
+
+   const timer1 =
+    setTimeout(
+     ()=>progress(
+      48,
+      "Limpiando bordes y halo..."
+     ),
+     1500
+    );
+
+
+   const timer2 =
+    setTimeout(
+     ()=>progress(
+      68,
+      "Mejorando imagen..."
+     ),
+     3000
+    );
+
+
+   const timer3 =
+    setTimeout(
+     ()=>progress(
+      82,
+      "Preparando resolución..."
+     ),
+     4500
+    );
+
+
+   const response =
+    await fetch(
+     "/api/quitar-fondo",
+     {
+      method:"POST",
+      body:fd
+     }
+    );
+
+
+   clearTimeout(timer1);
+   clearTimeout(timer2);
+   clearTimeout(timer3);
+
+
+   if(!response.ok){
+
+    let message =
+     "No fue posible procesar la imagen.";
+
+
+    try{
+
+     const data =
+      await response.json();
+
+     message =
+      data.error ||
+      message;
+
+    }
+    catch{}
+
+
+    throw new Error(
+     message
+    );
+
+   }
+
+
+   progress(
+    92,
+    "Generando PNG 300 DPI..."
+   );
+
+
+   resultBlob =
+    await response.blob();
+
+
+   if(resultURL){
+
+    URL.revokeObjectURL(
+     resultURL
+    );
+
+   }
+
+
+   resultURL =
+    URL.createObjectURL(
+     resultBlob
+    );
+
+
+   after.src =
+    resultURL;
+
+   after.hidden =
+    false;
+
+
+   document
+    .getElementById(
+     "emptyAfter"
+    )
+    .hidden =
+    true;
+
+
+   /*
+     HEADERS DE ANALISIS
+   */
+
+   const width =
+    response.headers.get(
+     "X-Zafrik-Width"
+    );
+
+   const height =
+    response.headers.get(
+     "X-Zafrik-Height"
+    );
+
+   const dpi =
+    response.headers.get(
+     "X-Zafrik-DPI"
+    ) || "300";
+
+   const semiBefore =
+    response.headers.get(
+     "X-Zafrik-Semi-Before"
+    );
+
+   const semiAfter =
+    response.headers.get(
+     "X-Zafrik-Semi-After"
+    );
+
+
+   document
+    .getElementById(
+     "statOutput"
+    )
+    .textContent =
+    width && height
+     ? `${width} × ${height}px`
+     : `${scale}X`;
+
+
+   document
+    .getElementById(
+     "statDPI"
+    )
+    .textContent =
+    dpi + " DPI";
+
+
+   if(
+    semiBefore !== null &&
+    semiAfter !== null
+   ){
+
+    document
+     .getElementById(
+      "statSemi"
+     )
+     .textContent =
+     Number(
+      semiAfter
+     ).toLocaleString();
+
+
+    document
+     .getElementById(
+      "analysisMessage"
+     )
+     .innerHTML =
+     `Fondo eliminado con IA ✓ · ` +
+     `Transparencia real ✓ · ` +
+     `Bordes analizados ✓ · ` +
+     `Píxeles semitransparentes: ` +
+     `<b>${Number(semiBefore).toLocaleString()}</b> → ` +
+     `<b>${Number(semiAfter).toLocaleString()}</b>.`;
+
+   }
+   else{
+
+    document
+     .getElementById(
+      "analysisMessage"
+     )
+     .textContent =
+     "Procesamiento terminado correctamente.";
+
+   }
+
+
+   downloadBtn.disabled =
+    false;
+
+
+   progress(
+    100,
+    "¡Archivo listo!"
+   );
+
+
+   showStatus(
+    "Procesamiento terminado. PNG transparente preparado correctamente.",
+    "good"
+   );
+
+
+   hideProgress();
+
+  }
+  catch(error){
+
+   progressBar.style.width =
+    "0%";
+
+
+   showStatus(
+    error.message,
+    "error"
+   );
+
+
+   hideProgress();
+
+  }
+  finally{
+
+   processBtn.disabled =
+    false;
+
+   processBtn.textContent =
+    "✨ PROCESAR CON IA PRO";
 
   }
 
-  resultBlob=await response.blob();
+ }
+);
 
-  after.src=URL.createObjectURL(resultBlob);
-  after.hidden=false;
 
-  document.getElementById("emptyAfter").hidden=true;
+/* ===============================
+   DESCARGAR
+================================ */
 
-  download.disabled=false;
+downloadBtn.addEventListener(
+ "click",
+ ()=>{
 
-  status(
-   "Procesamiento IA terminado correctamente.",
-   "good"
+  if(
+   !resultBlob ||
+   !resultURL
+  ){
+   return;
+  }
+
+
+  const a =
+   document.createElement(
+    "a"
+   );
+
+
+  a.href =
+   resultURL;
+
+
+  a.download =
+   "ZAFRIK-IA-PRO-300DPI.png";
+
+
+  document.body.appendChild(
+   a
   );
 
- }catch(e){
 
-  status(e.message,"error");
+  a.click();
 
- }finally{
 
-  btn.disabled=false;
-  btn.textContent="✨ PROCESAR CON IA";
+  a.remove();
 
  }
-
-};
-
-download.onclick=()=>{
-
- if(!resultBlob)return;
-
- const a=document.createElement("a");
-
- a.href=URL.createObjectURL(resultBlob);
- a.download="ZAFRIK-IA-PRO.png";
-
- a.click();
-
-};
+);
 
 </script>
 
