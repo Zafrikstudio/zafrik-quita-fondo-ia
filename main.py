@@ -17,14 +17,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V6.0
+# ZAFRIK IA PRO V6.2
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="6.0.0",
+    version="6.2.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -478,6 +478,42 @@ def admin_stats(
 
 
 # ============================================================
+# PANEL ADMINISTRADOR
+# MUESTRA public/admin.html
+# ============================================================
+
+@app.get("/admin.html", include_in_schema=False)
+def admin_page():
+
+    base_dir = os.path.dirname(
+        os.path.abspath(__file__)
+    )
+
+    admin_path = os.path.join(
+        base_dir,
+        "public",
+        "admin.html"
+    )
+
+    if not os.path.exists(admin_path):
+
+        return JSONResponse(
+            status_code=404,
+            content={
+                "ok": False,
+                "app": "ZAFRIK IA PRO",
+                "version": "6.2.0",
+                "message": "No se encontró public/admin.html"
+            }
+        )
+
+    return FileResponse(
+        admin_path,
+        media_type="text/html"
+    )
+
+
+# ============================================================
 # RUTA PRINCIPAL
 # MUESTRA public/index.html
 # ============================================================
@@ -502,7 +538,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.0.0",
+                "version": "6.2.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -524,7 +560,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "6.0.0"
+        "version": "6.2.0"
     }
 
 
@@ -544,7 +580,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "6.0.0"
+        "version": "6.2.0"
     }
 
 
@@ -1211,7 +1247,9 @@ async def process_legacy(
 
     sharpness: float = Form(35),
 
-    mode: str = Form("DTF")
+    mode: str = Form("DTF"),
+
+    authorization: str | None = Header(default=None)
 
 ):
 
@@ -1219,7 +1257,8 @@ async def process_legacy(
         image=image,
         scale=scale,
         sharpness=sharpness,
-        mode=mode
+        mode=mode,
+        authorization=authorization
     )
 
 
