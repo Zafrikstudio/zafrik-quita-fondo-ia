@@ -2,23 +2,29 @@ import os
 import io
 import struct
 import zlib
+import secrets
+from datetime import datetime, timedelta, timezone
+import bcrypt
+import jwt
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 import requests
 from PIL import Image, ImageEnhance
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V5.6
+# ZAFRIK IA PRO V6.0
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="5.6.0",
+    version="6.0.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -53,6 +59,163 @@ MAX_INPUT_PIXELS = 16_000_000
 MAX_OUTPUT_PIXELS = 24_000_000
 
 
+
+# ============================================================
+# USUARIOS / 10 IMAGENES GRATIS / PREMIUM
+# ============================================================
+
+FREE_LIMIT = 10
+JWT_SECRET = os.getenv("JWT_SECRET") or os.getenv("REMOVE_BG_API_KEY") or secrets.token_hex(32)
+JWT_ALGORITHM = "HS256"
+
+def db_connect():
+    url=os.getenv("DATABASE_URL")
+    if not url:
+        raise HTTPException(status_code=500,detail="DATABASE_URL no está configurada.")
+    try:
+        return psycopg2.connect(url,sslmode="require",connect_timeout=10)
+    except Exception as e:
+        print("DB ERROR:",repr(e),flush=True)
+        raise HTTPException(status_code=503,detail="No se pudo conectar con la base de datos.")
+
+def init_database():
+    try:
+        con=db_connect(); cur=con.cursor()
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS zafrik_ia_users(
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          plan VARCHAR(20) NOT NULL DEFAULT 'TRIAL',
+          free_limit INTEGER NOT NULL DEFAULT 10,
+          used_count INTEGER NOT NULL DEFAULT 0,
+          is_active BOOLEAN NOT NULL DEFAULT TRUE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )""")
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS zafrik_ia_usage(
+          id BIGSERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES zafrik_ia_users(id) ON DELETE CASCADE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )""")
+        con.commit(); cur.close(); con.close()
+        print("ZAFRIK IA DB LISTA",flush=True)
+    except Exception as e:
+        print("INIT DB ERROR:",repr(e),flush=True)
+
+@app.on_event("startup")
+def startup_database():
+    init_database()
+
+def clean_email(v):
+    return str(v or "").strip().lower()
+
+def user_public(r):
+    plan=str(r["plan"] or "TRIAL").upper()
+    used=int(r["used_count"] or 0); limit=int(r["free_limit"] or FREE_LIMIT)
+    return {"id":r["id"],"email":r["email"],"plan":plan,
+            "premium":plan=="PREMIUM","used":used,"limit":limit,
+            "remaining":None if plan=="PREMIUM" else max(0,limit-used),
+            "active":bool(r["is_active"])}
+
+def make_token(uid,email):
+    now=datetime.now(timezone.utc)
+    return jwt.encode({"sub":str(uid),"email":email,"iat":now,
+                       "exp":now+timedelta(days=30)},
+                      JWT_SECRET,algorithm=JWT_ALGORITHM)
+
+def auth_id(authorization):
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401,detail="Debes iniciar sesión.")
+    try:
+        d=jwt.decode(authorization.split(" ",1)[1],JWT_SECRET,algorithms=[JWT_ALGORITHM])
+        return int(d["sub"])
+    except Exception:
+        raise HTTPException(status_code=401,detail="Sesión vencida o inválida.")
+
+def get_user(uid,lock=False):
+    con=db_connect(); cur=con.cursor(cursor_factory=RealDictCursor)
+    q="""SELECT id,email,password_hash,plan,free_limit,used_count,is_active
+         FROM zafrik_ia_users WHERE id=%s"""
+    if lock:q+=" FOR UPDATE"
+    cur.execute(q,(uid,)); r=cur.fetchone()
+    if not r:
+        cur.close();con.close()
+        raise HTTPException(status_code=401,detail="Usuario no encontrado.")
+    if not r["is_active"]:
+        cur.close();con.close()
+        raise HTTPException(status_code=403,detail="Cuenta bloqueada.")
+    return con,cur,r
+
+@app.post("/api/auth/register")
+def register(email:str=Form(...),password:str=Form(...)):
+    email=clean_email(email)
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(status_code=400,detail="Correo no válido.")
+    if len(password)<6:
+        raise HTTPException(status_code=400,detail="La contraseña debe tener al menos 6 caracteres.")
+    ph=bcrypt.hashpw(password.encode(),bcrypt.gensalt()).decode()
+    con=db_connect()
+    try:
+        cur=con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""INSERT INTO zafrik_ia_users(email,password_hash)
+                       VALUES(%s,%s)
+                       RETURNING id,email,plan,free_limit,used_count,is_active""",(email,ph))
+        r=cur.fetchone();con.commit()
+        return {"ok":True,"token":make_token(r["id"],r["email"]),"user":user_public(r)}
+    except psycopg2.IntegrityError:
+        con.rollback()
+        raise HTTPException(status_code=409,detail="Ya existe una cuenta con este correo.")
+    finally: con.close()
+
+@app.post("/api/auth/login")
+def login(email:str=Form(...),password:str=Form(...)):
+    con=db_connect()
+    try:
+        cur=con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""SELECT id,email,password_hash,plan,free_limit,used_count,is_active
+                       FROM zafrik_ia_users WHERE email=%s""",(clean_email(email),))
+        r=cur.fetchone()
+        if not r or not bcrypt.checkpw(password.encode(),r["password_hash"].encode()):
+            raise HTTPException(status_code=401,detail="Correo o contraseña incorrectos.")
+        if not r["is_active"]:
+            raise HTTPException(status_code=403,detail="Cuenta bloqueada.")
+        return {"ok":True,"token":make_token(r["id"],r["email"]),"user":user_public(r)}
+    finally: con.close()
+
+@app.get("/api/auth/me")
+def me(authorization:str|None=Header(default=None)):
+    con,cur,r=get_user(auth_id(authorization))
+    try:return {"ok":True,"user":user_public(r)}
+    finally:cur.close();con.close()
+
+def reserve_use(uid):
+    con,cur,r=get_user(uid,True)
+    try:
+        if str(r["plan"]).upper()=="PREMIUM":
+            con.commit(); return False
+        if int(r["used_count"])>=int(r["free_limit"]):
+            con.rollback()
+            raise HTTPException(status_code=402,detail="Has utilizado tus 10 imágenes gratuitas. Activa ZAFRIK PREMIUM para continuar.")
+        cur.execute("UPDATE zafrik_ia_users SET used_count=used_count+1,updated_at=NOW() WHERE id=%s",(uid,))
+        cur.execute("INSERT INTO zafrik_ia_usage(user_id) VALUES(%s)",(uid,))
+        con.commit(); return True
+    finally:cur.close();con.close()
+
+def refund_use(uid):
+    con=db_connect()
+    try:
+        cur=con.cursor()
+        cur.execute("""UPDATE zafrik_ia_users SET used_count=GREATEST(used_count-1,0),updated_at=NOW()
+                       WHERE id=%s AND UPPER(plan)<>'PREMIUM'""",(uid,))
+        cur.execute("""DELETE FROM zafrik_ia_usage WHERE id=(
+                       SELECT id FROM zafrik_ia_usage WHERE user_id=%s ORDER BY id DESC LIMIT 1)""",(uid,))
+        con.commit()
+    except Exception as e:
+        con.rollback();print("REFUND ERROR:",repr(e),flush=True)
+    finally:con.close()
+
 # ============================================================
 # RUTA PRINCIPAL
 # MUESTRA public/index.html
@@ -78,7 +241,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "5.6.0",
+                "version": "6.0.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -100,7 +263,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "5.6.0"
+        "version": "6.0.0"
     }
 
 
@@ -117,7 +280,10 @@ def api_status():
         "ok": True,
         "server": "online",
         "remove_bg_configured": bool(api_key),
-        "version": "5.6.0"
+        "database_configured": bool(os.getenv("DATABASE_URL")),
+        "auth_enabled": True,
+        "free_limit": FREE_LIMIT,
+        "version": "6.0.0"
     }
 
 
@@ -559,11 +725,17 @@ async def process_image(
 
     sharpness: float = Form(35),
 
-    mode: str = Form("DTF")
+    mode: str = Form("DTF"),
+
+    authorization: str | None = Header(default=None)
 
 ):
 
+    user_id = auth_id(authorization)
+    usage_reserved = False
+
     try:
+        usage_reserved = reserve_use(user_id)
 
         # ====================================================
         # 1. LEER IMAGEN
@@ -657,6 +829,12 @@ async def process_image(
         # 8. RESPUESTA
         # ====================================================
 
+        uc, ucur, urow = get_user(user_id)
+        try:
+            uinfo = user_public(urow)
+        finally:
+            ucur.close(); uc.close()
+
         return Response(
             content=png_data,
 
@@ -668,7 +846,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "5.6.0",
+                "6.0.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -704,7 +882,16 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "LANCZOS-STAGED-V5.6"
+                "LANCZOS-STAGED-V5.6",
+
+                "X-User-Plan":
+                str(uinfo["plan"]),
+
+                "X-Uses-Remaining":
+                "unlimited" if uinfo["premium"] else str(uinfo["remaining"]),
+
+                "X-Uses-Used":
+                str(uinfo["used"])
             }
         )
 
@@ -714,12 +901,14 @@ async def process_image(
     # ========================================================
 
     except HTTPException:
-
+        if usage_reserved:
+            refund_use(user_id)
         raise
 
 
     except MemoryError:
-
+        if usage_reserved:
+            refund_use(user_id)
         raise HTTPException(
             status_code=507,
             detail=(
@@ -732,7 +921,8 @@ async def process_image(
 
 
     except Exception as error:
-
+        if usage_reserved:
+            refund_use(user_id)
         print(
             "ERROR ZAFRIK IA PRO:",
             repr(error),
