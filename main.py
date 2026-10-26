@@ -9,14 +9,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V5.2
+# ZAFRIK IA PRO V5.3
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="5.2.0",
+    version="5.3.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -76,7 +76,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "5.2.0",
+                "version": "5.3.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -98,7 +98,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "5.2.0"
+        "version": "5.3.0"
     }
 
 
@@ -115,7 +115,7 @@ def api_status():
         "ok": True,
         "server": "online",
         "remove_bg_configured": bool(api_key),
-        "version": "5.2.0"
+        "version": "5.3.0"
     }
 
 
@@ -422,6 +422,57 @@ def resize_safe(
 
 
 # ============================================================
+# GUARDAR PNG CON 300 DPI REALES
+# ============================================================
+
+def save_png_300_dpi(image: Image.Image) -> bytes:
+    """
+    Guarda el PNG con transparencia y metadato físico equivalente
+    a 300 DPI. Pillow escribe el chunk pHYs del PNG a partir de dpi.
+    Luego reabrimos el archivo para verificar que el metadato exista.
+    """
+
+    output = io.BytesIO()
+
+    image.save(
+        output,
+        format="PNG",
+        optimize=False,
+        compress_level=6,
+        dpi=(300.0, 300.0)
+    )
+
+    png_data = output.getvalue()
+    output.close()
+
+    # Verificación interna. PNG expresa la resolución en píxeles/metro,
+    # por eso al leerlo normalmente aparece ~299.9994 DPI.
+    try:
+        check = Image.open(io.BytesIO(png_data))
+        saved_dpi = check.info.get("dpi")
+        check.close()
+
+        if not saved_dpi or len(saved_dpi) < 2:
+            raise ValueError("El PNG no contiene metadato DPI.")
+
+        if abs(float(saved_dpi[0]) - 300.0) > 1.0 or abs(float(saved_dpi[1]) - 300.0) > 1.0:
+            raise ValueError(f"DPI inesperado: {saved_dpi}")
+
+    except Exception as error:
+        print(
+            "ERROR VERIFICANDO DPI:",
+            repr(error),
+            flush=True
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="No se pudo generar el PNG final con 300 DPI."
+        )
+
+    return png_data
+
+
+# ============================================================
 # PROCESAMIENTO PRINCIPAL
 # ============================================================
 
@@ -520,28 +571,12 @@ async def process_image(
 
 
         # ====================================================
-        # 7. CREAR PNG 300 DPI
+        # 7. CREAR Y VERIFICAR PNG 300 DPI
         # ====================================================
 
-        output = io.BytesIO()
-
-        result.save(
-            output,
-            format="PNG",
-            optimize=False,
-            dpi=(
-                300,
-                300
-            )
-        )
+        png_data = save_png_300_dpi(result)
 
         del result
-
-        png_data = (
-            output.getvalue()
-        )
-
-        output.close()
 
 
         # ====================================================
@@ -559,7 +594,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "5.2.0",
+                "5.3.0",
 
                 "X-Original-Width":
                 str(original_width),
