@@ -216,6 +216,267 @@ def refund_use(uid):
         con.rollback();print("REFUND ERROR:",repr(e),flush=True)
     finally:con.close()
 
+
+# ============================================================
+# ADMINISTRACION ZAFRIK IA PRO
+# Protegida con ADMIN_SECRET configurado en Render.
+# ============================================================
+
+def require_admin(x_admin_secret: str | None):
+    configured = os.getenv("ADMIN_SECRET")
+
+    if not configured:
+        raise HTTPException(
+            status_code=503,
+            detail="ADMIN_SECRET no está configurada en Render."
+        )
+
+    supplied = str(x_admin_secret or "")
+
+    if not supplied or not secrets.compare_digest(supplied, configured):
+        raise HTTPException(
+            status_code=401,
+            detail="Clave de administrador incorrecta."
+        )
+
+
+@app.get("/api/admin/users")
+def admin_users(
+    q: str = "",
+    limit: int = 50,
+    x_admin_secret: str | None = Header(default=None)
+):
+    require_admin(x_admin_secret)
+
+    q = clean_email(q)
+    limit = max(1, min(int(limit or 50), 100))
+
+    con = db_connect()
+
+    try:
+        cur = con.cursor(cursor_factory=RealDictCursor)
+
+        if q:
+            cur.execute("""
+                SELECT id,email,plan,free_limit,used_count,is_active,
+                       created_at,updated_at
+                FROM zafrik_ia_users
+                WHERE LOWER(email) LIKE %s
+                ORDER BY id DESC
+                LIMIT %s
+            """, (f"%{q}%", limit))
+        else:
+            cur.execute("""
+                SELECT id,email,plan,free_limit,used_count,is_active,
+                       created_at,updated_at
+                FROM zafrik_ia_users
+                ORDER BY id DESC
+                LIMIT %s
+            """, (limit,))
+
+        rows = cur.fetchall()
+
+        return {
+            "ok": True,
+            "count": len(rows),
+            "users": [user_public(row) for row in rows]
+        }
+
+    finally:
+        con.close()
+
+
+@app.get("/api/admin/user")
+def admin_user(
+    email: str,
+    x_admin_secret: str | None = Header(default=None)
+):
+    require_admin(x_admin_secret)
+    email = clean_email(email)
+
+    con = db_connect()
+
+    try:
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id,email,plan,free_limit,used_count,is_active,
+                   created_at,updated_at
+            FROM zafrik_ia_users
+            WHERE email=%s
+        """, (email,))
+        row = cur.fetchone()
+
+        if not row:
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado."
+            )
+
+        return {"ok": True, "user": user_public(row)}
+
+    finally:
+        con.close()
+
+
+@app.post("/api/admin/user/plan")
+def admin_set_plan(
+    email: str = Form(...),
+    plan: str = Form(...),
+    x_admin_secret: str | None = Header(default=None)
+):
+    require_admin(x_admin_secret)
+
+    email = clean_email(email)
+    plan = str(plan or "").strip().upper()
+
+    if plan not in ("TRIAL", "PREMIUM"):
+        raise HTTPException(
+            status_code=400,
+            detail="El plan debe ser TRIAL o PREMIUM."
+        )
+
+    con = db_connect()
+
+    try:
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            UPDATE zafrik_ia_users
+            SET plan=%s, updated_at=NOW()
+            WHERE email=%s
+            RETURNING id,email,plan,free_limit,used_count,is_active
+        """, (plan, email))
+        row = cur.fetchone()
+
+        if not row:
+            con.rollback()
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado."
+            )
+
+        con.commit()
+
+        return {
+            "ok": True,
+            "message": f"Plan actualizado a {plan}.",
+            "user": user_public(row)
+        }
+
+    finally:
+        con.close()
+
+
+@app.post("/api/admin/user/reset")
+def admin_reset_uses(
+    email: str = Form(...),
+    x_admin_secret: str | None = Header(default=None)
+):
+    require_admin(x_admin_secret)
+    email = clean_email(email)
+
+    con = db_connect()
+
+    try:
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            UPDATE zafrik_ia_users
+            SET used_count=0, updated_at=NOW()
+            WHERE email=%s
+            RETURNING id,email,plan,free_limit,used_count,is_active
+        """, (email,))
+        row = cur.fetchone()
+
+        if not row:
+            con.rollback()
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado."
+            )
+
+        cur.execute("""
+            DELETE FROM zafrik_ia_usage
+            WHERE user_id=%s
+        """, (row["id"],))
+
+        con.commit()
+
+        return {
+            "ok": True,
+            "message": "Los usos gratuitos fueron restablecidos.",
+            "user": user_public(row)
+        }
+
+    finally:
+        con.close()
+
+
+@app.post("/api/admin/user/active")
+def admin_set_active(
+    email: str = Form(...),
+    active: bool = Form(...),
+    x_admin_secret: str | None = Header(default=None)
+):
+    require_admin(x_admin_secret)
+    email = clean_email(email)
+
+    con = db_connect()
+
+    try:
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            UPDATE zafrik_ia_users
+            SET is_active=%s, updated_at=NOW()
+            WHERE email=%s
+            RETURNING id,email,plan,free_limit,used_count,is_active
+        """, (active, email))
+        row = cur.fetchone()
+
+        if not row:
+            con.rollback()
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado."
+            )
+
+        con.commit()
+
+        return {
+            "ok": True,
+            "message": "Cuenta desbloqueada." if active else "Cuenta bloqueada.",
+            "user": user_public(row)
+        }
+
+    finally:
+        con.close()
+
+
+@app.get("/api/admin/stats")
+def admin_stats(
+    x_admin_secret: str | None = Header(default=None)
+):
+    require_admin(x_admin_secret)
+
+    con = db_connect()
+
+    try:
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT
+              COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE UPPER(plan)='PREMIUM')::int AS premium,
+              COUNT(*) FILTER (WHERE UPPER(plan)<>'PREMIUM')::int AS trial,
+              COUNT(*) FILTER (WHERE is_active=FALSE)::int AS blocked,
+              COALESCE(SUM(used_count),0)::int AS processed
+            FROM zafrik_ia_users
+        """)
+        row = cur.fetchone()
+
+        return {"ok": True, "stats": dict(row)}
+
+    finally:
+        con.close()
+
+
 # ============================================================
 # RUTA PRINCIPAL
 # MUESTRA public/index.html
