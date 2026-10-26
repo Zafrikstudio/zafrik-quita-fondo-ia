@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V6.6</title>
+<title>ZAFRIK | ZAFRIK IA PRO V6.7</title>
 
 <style>
 *{box-sizing:border-box}
@@ -233,7 +233,7 @@ select{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V6.6
+  ZAFRIK IA PRO V6.7
  </span>
 
  <h1>
@@ -1362,6 +1362,107 @@ async function checkServer() {
 
 checkServer();
 loadAccount();
+</script>
+
+
+<script>
+/* ==========================================================
+   ZAFRIK IA PRO V6.7
+   ALTURA AUTOMÁTICA PARA IFRAME DE HOSTINGER
+========================================================== */
+(function(){
+  let lastHeight = 0;
+  let timer = null;
+
+  function getZafrikHeight(){
+    const body = document.body;
+    const html = document.documentElement;
+
+    return Math.max(
+      body ? body.scrollHeight : 0,
+      body ? body.offsetHeight : 0,
+      html ? html.scrollHeight : 0,
+      html ? html.offsetHeight : 0,
+      html ? html.clientHeight : 0
+    );
+  }
+
+  function sendZafrikHeight(force){
+    if(window.parent === window) return;
+
+    const height = Math.ceil(getZafrikHeight());
+
+    if(!force && Math.abs(height - lastHeight) < 3) return;
+
+    lastHeight = height;
+
+    window.parent.postMessage(
+      {
+        type: "ZAFRIK_HEIGHT",
+        height: height
+      },
+      "*"
+    );
+  }
+
+  function scheduleHeight(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      sendZafrikHeight(false);
+    }, 80);
+  }
+
+  window.addEventListener("load", function(){
+    sendZafrikHeight(true);
+
+    setTimeout(function(){ sendZafrikHeight(true); }, 300);
+    setTimeout(function(){ sendZafrikHeight(true); }, 1000);
+    setTimeout(function(){ sendZafrikHeight(true); }, 3000);
+  });
+
+  window.addEventListener("resize", scheduleHeight);
+
+  window.addEventListener("message", function(event){
+    if(
+      event.data &&
+      event.data.type === "ZAFRIK_REQUEST_HEIGHT"
+    ){
+      sendZafrikHeight(true);
+    }
+  });
+
+  if("ResizeObserver" in window){
+    const ro = new ResizeObserver(scheduleHeight);
+
+    if(document.documentElement) ro.observe(document.documentElement);
+    if(document.body) ro.observe(document.body);
+  }
+
+  if("MutationObserver" in window && document.body){
+    const mo = new MutationObserver(scheduleHeight);
+
+    mo.observe(document.body,{
+      childList:true,
+      subtree:true,
+      attributes:true,
+      characterData:false
+    });
+  }
+
+  document.addEventListener("click", function(){
+    setTimeout(scheduleHeight, 50);
+    setTimeout(scheduleHeight, 350);
+  });
+
+  document.addEventListener("change", function(){
+    setTimeout(scheduleHeight, 50);
+    setTimeout(scheduleHeight, 350);
+  });
+
+  setInterval(function(){
+    sendZafrikHeight(false);
+  }, 1500);
+})();
 </script>
 
 </body>
