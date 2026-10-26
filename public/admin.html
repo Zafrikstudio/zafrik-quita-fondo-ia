@@ -32,7 +32,7 @@ th,td{text-align:left;padding:12px 9px;border-bottom:1px solid #edf0f5;font-size
 <body>
 <div class="wrap">
  <section class="hero">
-  <span class="badge">ZAFRIK IA PRO · ADMIN V6.4</span>
+  <span class="badge">ZAFRIK IA PRO · ADMIN V6.4.1</span>
   <h1>Panel de administración</h1>
   <div class="muted">Administra usuarios, pruebas gratuitas y cuentas Premium.</div>
  </section>
@@ -172,16 +172,10 @@ async function action(act,u){
    result=await post("/api/admin/user/active",{email:u.email,active:next?"true":"false"});
 
   }else if(act==="delete"){
-   if(!confirm("ATENCIÓN: se eliminará permanentemente la cuenta "+u.email+" y sus registros de uso. ¿Deseas continuar?")){
+   if(!confirm("ATENCIÓN: ¿Seguro que deseas ELIMINAR PERMANENTEMENTE la cuenta "+u.email+"? También se eliminarán sus sesiones y registros de uso.")){
      message("Eliminación cancelada.");return;
    }
-   const typed=prompt("Para confirmar, escribe exactamente el correo del usuario:","");
-   if(typed===null){message("Eliminación cancelada.");return;}
-   if(typed.trim().toLowerCase()!==u.email.trim().toLowerCase()){
-     alert("El correo escrito no coincide. No se borró el usuario.");
-     message("No se borró el usuario: confirmación incorrecta.","err");return;
-   }
-   result=await post("/api/admin/user/delete",{email:u.email,confirm_email:typed.trim()});
+   result=await post("/api/admin/user/delete",{email:u.email,confirm_email:u.email});
   }
 
   const successText=(result&&result.message)?result.message:"Cambio realizado correctamente.";
