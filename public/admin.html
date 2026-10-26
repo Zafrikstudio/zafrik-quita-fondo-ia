@@ -32,7 +32,7 @@ th,td{text-align:left;padding:12px 9px;border-bottom:1px solid #edf0f5;font-size
 <body>
 <div class="wrap">
  <section class="hero">
-  <span class="badge">ZAFRIK IA PRO · ADMIN</span>
+  <span class="badge">ZAFRIK IA PRO · ADMIN V6.3</span>
   <h1>Panel de administración</h1>
   <div class="muted">Administra usuarios, pruebas gratuitas y cuentas Premium.</div>
  </section>
@@ -71,7 +71,7 @@ th,td{text-align:left;padding:12px 9px;border-bottom:1px solid #edf0f5;font-size
    <div class="msg hidden" id="msg"></div>
    <div class="tableWrap">
     <table>
-     <thead><tr><th>Correo</th><th>Plan</th><th>Usados</th><th>Disponibles</th><th>Estado</th><th>Acciones</th></tr></thead>
+     <thead><tr><th>Correo</th><th>Plan</th><th>Usados</th><th>Disponibles</th><th>Registro</th><th>Premium desde</th><th>Vence</th><th>Estado</th><th>Acciones</th></tr></thead>
      <tbody id="rows"></tbody>
     </table>
    </div>
@@ -97,18 +97,31 @@ async function stats(){
  $("sTotal").textContent=d.stats.total;$("sTrial").textContent=d.stats.trial;$("sPremium").textContent=d.stats.premium;
  $("sBlocked").textContent=d.stats.blocked;$("sProcessed").textContent=d.stats.processed;
 }
+function fmtDate(v){
+ if(!v)return "—";
+ const d=new Date(v);
+ return d.toLocaleDateString("es-CR",{year:"numeric",month:"2-digit",day:"2-digit"});
+}
 function render(users){
  const tbody=$("rows");tbody.innerHTML="";
- if(!users.length){tbody.innerHTML='<tr><td colspan="6">No se encontraron usuarios.</td></tr>';return;}
+ if(!users.length){tbody.innerHTML='<tr><td colspan="9">No se encontraron usuarios.</td></tr>';return;}
  users.forEach(u=>{
   const tr=document.createElement("tr");
   const remaining=u.premium?"ILIMITADO":u.remaining;
   tr.innerHTML=`<td><b>${esc(u.email)}</b></td>
   <td><span class="pill ${u.premium?"premium":"trial"}">${esc(u.plan)}</span></td>
   <td>${esc(u.used)}</td><td>${esc(remaining)}</td>
+  <td>${fmtDate(u.created_at)}</td>
+  <td>${fmtDate(u.premium_started_at)}</td>
+  <td>${fmtDate(u.premium_expires_at)}</td>
   <td><span class="pill ${u.active?"active":"blocked"}">${u.active?"ACTIVA":"BLOQUEADA"}</span></td>
   <td><div class="actions">
-   ${u.premium?`<button class="secondary" data-act="trial">VOLVER A PRUEBA</button>`:`<button class="good" data-act="premium">ACTIVAR PREMIUM</button>`}
+   ${u.premium?`
+    <button class="secondary" data-act="renew1">+1 MES</button>
+    <button class="secondary" data-act="renew6">+6 MESES</button>
+    <button class="secondary" data-act="renew12">+12 MESES</button>
+    <button class="secondary" data-act="trial">VOLVER A PRUEBA</button>`
+    :`<button class="good" data-act="premium">ACTIVAR PREMIUM</button>`}
    <button class="secondary" data-act="reset">REINICIAR 10</button>
    <button class="${u.active?"danger":"good"}" data-act="active">${u.active?"BLOQUEAR":"DESBLOQUEAR"}</button>
   </div></td>`;
@@ -130,8 +143,15 @@ async function post(path,data){
 async function action(act,u){
  try{
   if(act==="premium"){
-   if(!confirm("¿Activar PREMIUM ilimitado para "+u.email+"?"))return;
-   await post("/api/admin/user/plan",{email:u.email,plan:"PREMIUM"});
+   const months=prompt("¿Cuántos meses de Premium? Escribe 1, 6 o 12:","1");
+   if(months===null)return;
+   if(!["1","6","12"].includes(months.trim())){alert("Solo puedes elegir 1, 6 o 12 meses.");return;}
+   if(!confirm(`¿Activar PREMIUM por ${months} mes(es) para ${u.email}?`))return;
+   await post("/api/admin/user/plan",{email:u.email,plan:"PREMIUM",months:months.trim()});
+  }else if(act==="renew1" || act==="renew6" || act==="renew12"){
+   const months=act==="renew1"?1:(act==="renew6"?6:12);
+   if(!confirm(`¿Agregar ${months} mes(es) a Premium de ${u.email}?`))return;
+   await post("/api/admin/user/renew",{email:u.email,months:String(months)});
   }else if(act==="trial"){
    if(!confirm("¿Volver esta cuenta al plan de prueba?"))return;
    await post("/api/admin/user/plan",{email:u.email,plan:"TRIAL"});
