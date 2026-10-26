@@ -18,14 +18,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V6.6
+# ZAFRIK IA PRO V6.7 HD
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="6.6.0",
+    version="6.7.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.6.0",
+                "version": "6.7.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.6.0",
+                "version": "6.7.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "6.6.0"
+        "version": "6.7.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "6.6.0"
+        "version": "6.7.0"
     }
 
 
@@ -960,75 +960,95 @@ def enhance_image(
 # ESCALADO SEGURO
 # ============================================================
 
-def resize_safe(image: Image.Image, scale: int):
+def resize_safe(image: Image.Image, scale: int, hd_mode: str = "ILUSTRACION"):
     """
-    V5.6 - Escalado mejorado para impresión.
-
-    - Mantiene transparencia RGBA.
-    - Usa LANCZOS por etapas para 2X/3X/4X.
-    - Aplica nitidez moderada después de cada etapa para reducir
-      la apariencia borrosa sin crear halos fuertes.
-    - Respeta MAX_OUTPUT_PIXELS para Render Free.
+    V6.7 HD
+    - ILUSTRACION: suaviza dientes/píxeles antes de ampliar y recupera contorno.
+    - FOTO: conserva textura con un tratamiento más suave.
+    - Mantiene transparencia.
+    - Respeta MAX_OUTPUT_PIXELS.
+    Nota: mejora el reescalado, pero no inventa detalle que no exista en el original.
     """
-
-    scale = int(scale)
+    try:
+        scale = int(scale)
+    except Exception:
+        scale = 1
 
     if scale not in [1, 2, 3, 4]:
         scale = 1
 
+    mode = str(hd_mode or "ILUSTRACION").strip().upper()
+    if mode not in ("ILUSTRACION", "FOTO"):
+        mode = "ILUSTRACION"
+
     width, height = image.size
 
     if scale == 1:
-        return image, 1.0
+        return image.convert("RGBA"), 1.0
 
     requested_width = width * scale
     requested_height = height * scale
     requested_pixels = requested_width * requested_height
 
     real_scale = float(scale)
-
     if requested_pixels > MAX_OUTPUT_PIXELS:
-        real_scale = (
-            MAX_OUTPUT_PIXELS /
-            float(width * height)
-        ) ** 0.5
+        real_scale = (MAX_OUTPUT_PIXELS / float(width * height)) ** 0.5
 
-    # Nunca superar la escala solicitada.
     real_scale = min(real_scale, float(scale))
 
     final_width = max(1, int(round(width * real_scale)))
     final_height = max(1, int(round(height * real_scale)))
 
-    if final_width == width and final_height == height:
-        return image, 1.0
-
     current = image.convert("RGBA")
-    current_w, current_h = current.size
+    if final_width == width and final_height == height:
+        return current, 1.0
 
-    # Escalado por etapas de hasta 1.5X. Suele producir un resultado
-    # visualmente más limpio que un único salto grande.
-    while current_w < final_width or current_h < final_height:
-        next_w = min(final_width, max(current_w + 1, int(round(current_w * 1.5))))
-        next_h = min(final_height, max(current_h + 1, int(round(current_h * 1.5))))
+    # Separar alfa para no ensuciar la transparencia.
+    alpha = current.getchannel("A")
+    rgb = current.convert("RGB")
 
-        current = current.resize(
-            (next_w, next_h),
-            Image.Resampling.LANCZOS
+    if mode == "ILUSTRACION":
+        # Suavizado MUY ligero antes del aumento: reduce escalones y bloques.
+        rgb = rgb.filter(ImageFilter.GaussianBlur(radius=0.28))
+    else:
+        # En fotografía se prioriza textura.
+        rgb = rgb.filter(ImageFilter.GaussianBlur(radius=0.12))
+
+    # Escalado directo LANCZOS de alta calidad.
+    rgb = rgb.resize((final_width, final_height), Image.Resampling.LANCZOS)
+    alpha = alpha.resize((final_width, final_height), Image.Resampling.LANCZOS)
+
+    if mode == "ILUSTRACION":
+        # Recupera línea sin el efecto agresivo de Sharpness al 100%.
+        rgb = rgb.filter(
+            ImageFilter.UnsharpMask(
+                radius=1.15,
+                percent=115,
+                threshold=3
+            )
+        )
+        # Segundo pase mínimo para limpiar apariencia blanda sin crear halos.
+        rgb = rgb.filter(
+            ImageFilter.UnsharpMask(
+                radius=0.55,
+                percent=45,
+                threshold=5
+            )
+        )
+    else:
+        rgb = rgb.filter(
+            ImageFilter.UnsharpMask(
+                radius=1.0,
+                percent=70,
+                threshold=4
+            )
         )
 
-        # Nitidez suave sobre RGB, conservando el alfa original.
-        alpha = current.getchannel("A")
-        rgb = current.convert("RGB")
+    result = rgb.convert("RGBA")
+    result.putalpha(alpha)
 
-        # Un pequeño refuerzo por etapa evita exagerar contornos.
-        rgb = ImageEnhance.Sharpness(rgb).enhance(1.08)
+    return result, real_scale
 
-        current = rgb.convert("RGBA")
-        current.putalpha(alpha)
-
-        current_w, current_h = current.size
-
-    return current, real_scale
 # ============================================================
 # GUARDAR PNG CON 300 DPI REALES
 # ============================================================
@@ -1248,6 +1268,8 @@ async def process_image(
 
     manual_points: str = Form("[]"),
 
+    hd_mode: str = Form("ILUSTRACION"),
+
     authorization: str | None = Header(default=None)
 
 ):
@@ -1327,7 +1349,8 @@ async def process_image(
         result, real_scale = (
             resize_safe(
                 result,
-                scale
+                scale,
+                hd_mode
             )
         )
 
@@ -1498,6 +1521,7 @@ async def process_legacy(
         bg_tolerance=18,
         edge_only=False,
         manual_points="[]",
+        hd_mode="ILUSTRACION",
         authorization=authorization
     )
 
