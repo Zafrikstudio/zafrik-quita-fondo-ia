@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V7.1</title>
+<title>ZAFRIK | ZAFRIK IA PRO V7.3</title>
 
 <style>
 *{box-sizing:border-box}
@@ -222,6 +222,19 @@ select{
  .analysisGrid{grid-template-columns:1fr}
 }
 </style>
+
+<style>
+/* V7.3 - CORRECCIÓN ESPACIO BLANCO INFERIOR EN HOSTINGER */
+html, body{
+  margin:0 !important;
+  padding-bottom:0 !important;
+  min-height:0 !important;
+}
+body > *:last-child{
+  margin-bottom:0 !important;
+}
+</style>
+
 </head>
 
 <body>
@@ -233,7 +246,7 @@ select{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V7.1
+  ZAFRIK IA PRO V7.3
  </span>
 
  <h1>
@@ -370,6 +383,47 @@ select{
    >
 
   </div>
+
+
+  <div class="control">
+
+   <div class="label">
+    <span>Tolerancia precisa de fondo</span>
+    <span class="value" id="bgTolV">18%</span>
+   </div>
+
+   <input
+    id="bgTol"
+    type="range"
+    min="0"
+    max="100"
+    value="18"
+   >
+
+   <label style="display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:12px;font-weight:800;line-height:1.4;cursor:pointer">
+    <input id="edgeOnly" type="checkbox" checked style="width:auto;margin-top:2px">
+    <span>Proteger interior del diseño — borrar únicamente el fondo conectado a los bordes</span>
+   </label>
+
+   <div style="font-size:11px;color:#687186;margin-top:8px;line-height:1.45">
+    Recomendado: 10–25%. Si borra parte del diseño, baja la tolerancia.
+   </div>
+
+   <div style="margin-top:12px;padding:11px;border:1px solid #dfe3ec;border-radius:12px;background:#fff">
+    <label style="display:flex;gap:9px;align-items:flex-start;font-size:12px;font-weight:900;cursor:pointer">
+     <input id="pickBg" type="checkbox" style="width:auto;margin-top:2px">
+     <span>🎯 Seleccionar fondo manualmente</span>
+    </label>
+    <div style="font-size:11px;color:#687186;margin-top:6px;line-height:1.45">
+     Actívalo y haz clic en las zonas de fondo que todavía quieres borrar. No selecciones partes del diseño.
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap">
+     <strong id="pickCount" style="font-size:11px">0 zonas seleccionadas</strong>
+     <button type="button" id="clearPicks" style="border:1px solid #d8deea;background:#f5f7fb;border-radius:9px;padding:7px 10px;font-size:10px;font-weight:900;cursor:pointer">
+      LIMPIAR SELECCIÓN
+     </button>
+    </div>
+   </div>
 
   </div>
 
@@ -1359,7 +1413,7 @@ loadAccount();
 
 <script>
 /* ==========================================================
-   ZAFRIK IA PRO V7.1
+   ZAFRIK IA PRO V7.3
    ALTURA AUTOMÁTICA PARA IFRAME DE HOSTINGER
 ========================================================== */
 (function(){
@@ -1368,15 +1422,35 @@ loadAccount();
 
   function getZafrikHeight(){
     const body = document.body;
-    const html = document.documentElement;
+    if(!body) return 1200;
 
-    return Math.max(
-      body ? body.scrollHeight : 0,
-      body ? body.offsetHeight : 0,
-      html ? html.scrollHeight : 0,
-      html ? html.offsetHeight : 0,
-      html ? html.clientHeight : 0
-    );
+    let bottom = 0;
+
+    /* Medir el final REAL de los elementos visibles.
+       Evita usar scrollHeight/min-height que dejaba espacio blanco abajo. */
+    const nodes = body.querySelectorAll("*");
+
+    nodes.forEach(function(el){
+      const style = window.getComputedStyle(el);
+
+      if(
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        style.position === "fixed"
+      ){
+        return;
+      }
+
+      const rect = el.getBoundingClientRect();
+
+      if(rect.width === 0 && rect.height === 0) return;
+
+      const mb = parseFloat(style.marginBottom) || 0;
+      bottom = Math.max(bottom, rect.bottom + window.scrollY + mb);
+    });
+
+    /* margen pequeño de seguridad, no cientos de píxeles */
+    return Math.ceil(bottom + 8);
   }
 
   function sendZafrikHeight(force){
@@ -1391,7 +1465,7 @@ loadAccount();
     window.parent.postMessage(
       {
         type: "ZAFRIK_HEIGHT",
-        height: height
+        height: Math.max(600, height)
       },
       "*"
     );
