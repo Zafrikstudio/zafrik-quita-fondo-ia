@@ -15,7 +15,7 @@ h1{font-size:34px;margin:12px 0 6px}.muted{color:#667085;font-size:13px}
 input,button{font:inherit}input{width:100%;padding:12px;border:1px solid #d7ddea;border-radius:11px;outline:none}
 button{border:0;border-radius:11px;padding:11px 15px;font-weight:900;cursor:pointer}
 .primary{color:#fff;background:linear-gradient(90deg,#356cff,#744aff,#ff327b,#ff7b36)}
-.secondary{background:#f1f4fa;color:#22283a}.danger{background:#fff0f3;color:#c31d4d}.good{background:#eafbf3;color:#08784c}
+.secondary{background:#f1f4fa;color:#22283a}.danger{background:#fff0f3;color:#c31d4d}.delete{background:#c51f4d;color:#fff}.good{background:#eafbf3;color:#08784c}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}
 .stat{padding:15px;border:1px solid #e2e7f0;border-radius:15px;background:#fff}.stat b{display:block;font-size:24px;margin-top:5px}
@@ -32,7 +32,7 @@ th,td{text-align:left;padding:12px 9px;border-bottom:1px solid #edf0f5;font-size
 <body>
 <div class="wrap">
  <section class="hero">
-  <span class="badge">ZAFRIK IA PRO · ADMIN V6.3</span>
+  <span class="badge">ZAFRIK IA PRO · ADMIN V6.4</span>
   <h1>Panel de administración</h1>
   <div class="muted">Administra usuarios, pruebas gratuitas y cuentas Premium.</div>
  </section>
@@ -124,6 +124,7 @@ function render(users){
     :`<button class="good" data-act="premium">ACTIVAR PREMIUM</button>`}
    <button class="secondary" data-act="reset">REINICIAR 10</button>
    <button class="${u.active?"danger":"good"}" data-act="active">${u.active?"BLOQUEAR":"DESBLOQUEAR"}</button>
+   <button class="delete" data-act="delete">BORRAR USUARIO</button>
   </div></td>`;
   tr.querySelectorAll("button").forEach(b=>b.onclick=()=>action(b.dataset.act,u));
   tbody.appendChild(tr);
@@ -142,29 +143,55 @@ async function post(path,data){
 }
 async function action(act,u){
  try{
+  message("Procesando cambio...");
+  let result=null;
+
   if(act==="premium"){
    const months=prompt("¿Cuántos meses de Premium? Escribe 1, 6 o 12:","1");
-   if(months===null)return;
-   if(!["1","6","12"].includes(months.trim())){alert("Solo puedes elegir 1, 6 o 12 meses.");return;}
-   if(!confirm(`¿Activar PREMIUM por ${months} mes(es) para ${u.email}?`))return;
-   await post("/api/admin/user/plan",{email:u.email,plan:"PREMIUM",months:months.trim()});
+   if(months===null){message("Operación cancelada.");return;}
+   if(!["1","6","12"].includes(months.trim())){alert("Solo puedes elegir 1, 6 o 12 meses.");message("Duración inválida.","err");return;}
+   if(!confirm(`¿Activar PREMIUM por ${months} mes(es) para ${u.email}?`)){message("Operación cancelada.");return;}
+   result=await post("/api/admin/user/plan",{email:u.email,plan:"PREMIUM",months:months.trim()});
+
   }else if(act==="renew1" || act==="renew6" || act==="renew12"){
    const months=act==="renew1"?1:(act==="renew6"?6:12);
-   if(!confirm(`¿Agregar ${months} mes(es) a Premium de ${u.email}?`))return;
-   await post("/api/admin/user/renew",{email:u.email,months:String(months)});
+   if(!confirm(`¿Agregar ${months} mes(es) a Premium de ${u.email}?`)){message("Operación cancelada.");return;}
+   result=await post("/api/admin/user/renew",{email:u.email,months:String(months)});
+
   }else if(act==="trial"){
-   if(!confirm("¿Volver esta cuenta al plan de prueba?"))return;
-   await post("/api/admin/user/plan",{email:u.email,plan:"TRIAL"});
+   if(!confirm("¿Volver esta cuenta al plan de prueba?")){message("Operación cancelada.");return;}
+   result=await post("/api/admin/user/plan",{email:u.email,plan:"TRIAL",months:"1"});
+
   }else if(act==="reset"){
-   if(!confirm("¿Restablecer los usos gratuitos a 10 para "+u.email+"?"))return;
-   await post("/api/admin/user/reset",{email:u.email});
+   if(!confirm("¿Restablecer los usos gratuitos a 10 para "+u.email+"?")){message("Operación cancelada.");return;}
+   result=await post("/api/admin/user/reset",{email:u.email});
+
   }else if(act==="active"){
    const next=!u.active;
-   if(!confirm(next?"¿Desbloquear esta cuenta?":"¿Bloquear esta cuenta?"))return;
-   await post("/api/admin/user/active",{email:u.email,active:String(next)});
+   if(!confirm(next?"¿Desbloquear esta cuenta?":"¿Bloquear esta cuenta y cerrar sus sesiones?")){message("Operación cancelada.");return;}
+   result=await post("/api/admin/user/active",{email:u.email,active:next?"true":"false"});
+
+  }else if(act==="delete"){
+   if(!confirm("ATENCIÓN: se eliminará permanentemente la cuenta "+u.email+" y sus registros de uso. ¿Deseas continuar?")){
+     message("Eliminación cancelada.");return;
+   }
+   const typed=prompt("Para confirmar, escribe exactamente el correo del usuario:","");
+   if(typed===null){message("Eliminación cancelada.");return;}
+   if(typed.trim().toLowerCase()!==u.email.trim().toLowerCase()){
+     alert("El correo escrito no coincide. No se borró el usuario.");
+     message("No se borró el usuario: confirmación incorrecta.","err");return;
+   }
+   result=await post("/api/admin/user/delete",{email:u.email,confirm_email:typed.trim()});
   }
-  await stats();await list($("query").value.trim());
- }catch(e){message(e.message,"err");}
+
+  const successText=(result&&result.message)?result.message:"Cambio realizado correctamente.";
+  await stats();
+  await list($("query").value.trim());
+  message(successText,"ok");
+
+ }catch(e){
+  message("ERROR: "+(e.message||"No se pudo realizar la operación."),"err");
+ }
 }
 $("enter").onclick=async()=>{
  adminSecret=$("secret").value;
