@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V7.0 BORDE LIMPIO
+# ZAFRIK IA PRO V7.1 SIN CONTRAER/EXPANDIR
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.0.0",
+                "version": "7.1.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.0.0",
+                "version": "7.1.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "7.0.0"
+        "version": "7.1.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "7.0.0"
+        "version": "7.1.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V7.0 BORDE LIMPIO
+    V7.1 SIN CONTRAER/EXPANDIR
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1361,12 +1361,11 @@ def decontaminate_light_edge(image: Image.Image, strength: int = 40):
     return rgba
 
 
-def refine_alpha_edge(image: Image.Image, precision: int = 90, halo: int = 70, edge_adjust: int = 0):
+def refine_alpha_edge(image: Image.Image, precision: int = 90, halo: int = 70):
     """
     V6.9: controles REALES de borde.
     precision: endurece/separa alfa dudosa.
     halo: elimina píxeles semitransparentes claros del borde.
-    edge_adjust: -10 contrae, +10 expande.
     """
     rgba = image.convert("RGBA")
     alpha = rgba.getchannel("A")
@@ -1375,18 +1374,6 @@ def refine_alpha_edge(image: Image.Image, precision: int = 90, halo: int = 70, e
     except Exception: precision = 90
     try: halo = max(0, min(100, int(halo)))
     except Exception: halo = 70
-    try: edge_adjust = max(-10, min(10, int(edge_adjust)))
-    except Exception: edge_adjust = 0
-
-    # Contraer/expandir máscara. 1 unidad ~= 1 px a resolución de trabajo.
-    steps = min(5, abs(edge_adjust))
-    if edge_adjust < 0:
-        for _ in range(steps):
-            alpha = alpha.filter(ImageFilter.MinFilter(3))
-    elif edge_adjust > 0:
-        for _ in range(steps):
-            alpha = alpha.filter(ImageFilter.MaxFilter(3))
-
     # Precisión alta = transición más firme, pero conserva antialias.
     cutoff = int(8 + (precision - 50) * 0.28)
     if cutoff > 0:
@@ -1470,8 +1457,6 @@ async def process_image(
 
     halo: int = Form(70),
 
-    edge_adjust: int = Form(0),
-
     remove_shadow: bool = Form(False),
 
     authorization: str | None = Header(default=None)
@@ -1543,8 +1528,7 @@ async def process_image(
         result = refine_alpha_edge(
             result,
             precision,
-            halo,
-            edge_adjust
+            halo
         )
 
         # Quitar contaminación blanca del borde usando el mismo
@@ -1623,7 +1607,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "7.0.0",
+                "7.1.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1658,9 +1642,6 @@ async def process_image(
                 "X-Halo":
                 str(halo),
 
-                "X-Edge-Adjust":
-                str(edge_adjust),
-
                 "X-Remove-Shadow":
                 "true" if remove_shadow else "false",
 
@@ -1680,7 +1661,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V7.0",
+                "ZAFRIK-HD-V7.1",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
@@ -1765,7 +1746,6 @@ async def process_legacy(
         hd_mode="ILUSTRACION",
         precision=90,
         halo=70,
-        edge_adjust=0,
         remove_shadow=False,
         authorization=authorization
     )
