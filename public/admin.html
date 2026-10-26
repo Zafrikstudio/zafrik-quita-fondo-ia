@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZAFRIK IA PRO · Administración</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f8fc;color:#171b2d}
+.wrap{max-width:1180px;margin:auto;padding:28px 18px 50px}
+.hero{padding:24px;border-radius:24px;background:linear-gradient(135deg,#eef6ff,#fff 45%,#fff0f5);border:1px solid #e1e6f0}
+.badge{display:inline-block;padding:8px 13px;border-radius:20px;color:#fff;font-weight:900;font-size:12px;background:linear-gradient(90deg,#356cff,#744aff,#ff327b,#ff7b36)}
+h1{font-size:34px;margin:12px 0 6px}.muted{color:#667085;font-size:13px}
+.card{background:#fff;border:1px solid #e0e5ef;border-radius:18px;padding:18px;margin-top:16px;box-shadow:0 10px 30px rgba(31,44,76,.05)}
+.login{display:grid;grid-template-columns:1fr auto;gap:10px}
+input,button{font:inherit}input{width:100%;padding:12px;border:1px solid #d7ddea;border-radius:11px;outline:none}
+button{border:0;border-radius:11px;padding:11px 15px;font-weight:900;cursor:pointer}
+.primary{color:#fff;background:linear-gradient(90deg,#356cff,#744aff,#ff327b,#ff7b36)}
+.secondary{background:#f1f4fa;color:#22283a}.danger{background:#fff0f3;color:#c31d4d}.good{background:#eafbf3;color:#08784c}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}
+.stat{padding:15px;border:1px solid #e2e7f0;border-radius:15px;background:#fff}.stat b{display:block;font-size:24px;margin-top:5px}
+.search{display:grid;grid-template-columns:1fr auto auto;gap:9px}
+.tableWrap{overflow:auto;margin-top:14px}table{width:100%;border-collapse:collapse;min-width:850px}
+th,td{text-align:left;padding:12px 9px;border-bottom:1px solid #edf0f5;font-size:13px}th{font-size:11px;color:#697386;text-transform:uppercase}
+.pill{display:inline-block;padding:6px 9px;border-radius:18px;font-size:10px;font-weight:900}.trial{background:#f0edff;color:#6745e8}.premium{background:#fff1d5;color:#996000}.blocked{background:#ffe7ed;color:#b51f49}.active{background:#e7f9f0;color:#08784c}
+.actions{display:flex;gap:6px;flex-wrap:wrap}.actions button{padding:7px 9px;font-size:10px}
+.msg{margin-top:11px;padding:11px;border-radius:10px;background:#f5f7fb;color:#566074;font-size:12px}.msg.err{background:#fff0f3;color:#b51f49}.msg.ok{background:#eafbf3;color:#08784c}
+.hidden{display:none!important}
+@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.login,.search{grid-template-columns:1fr}h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <section class="hero">
+  <span class="badge">ZAFRIK IA PRO · ADMIN</span>
+  <h1>Panel de administración</h1>
+  <div class="muted">Administra usuarios, pruebas gratuitas y cuentas Premium.</div>
+ </section>
+
+ <section class="card" id="loginCard">
+  <h3>🔐 Acceso administrativo</h3>
+  <p class="muted">Ingresa la clave ADMIN_SECRET configurada en Render. No se guarda dentro de esta página.</p>
+  <div class="login">
+   <input id="secret" type="password" placeholder="Clave de administrador" autocomplete="off">
+   <button class="primary" id="enter">ENTRAR AL PANEL</button>
+  </div>
+  <div class="msg hidden" id="loginMsg"></div>
+ </section>
+
+ <main id="panel" class="hidden">
+  <section class="card">
+   <div class="topbar">
+    <div><b>Resumen general</b><div class="muted">Datos actuales de ZAFRIK IA PRO</div></div>
+    <button class="secondary" id="exit">CERRAR PANEL</button>
+   </div>
+   <div class="stats">
+    <div class="stat">Usuarios<b id="sTotal">—</b></div>
+    <div class="stat">Prueba<b id="sTrial">—</b></div>
+    <div class="stat">Premium<b id="sPremium">—</b></div>
+    <div class="stat">Bloqueados<b id="sBlocked">—</b></div>
+    <div class="stat">Procesados<b id="sProcessed">—</b></div>
+   </div>
+  </section>
+
+  <section class="card">
+   <div class="search">
+    <input id="query" type="email" placeholder="Buscar por correo electrónico">
+    <button class="primary" id="searchBtn">BUSCAR</button>
+    <button class="secondary" id="allBtn">VER USUARIOS</button>
+   </div>
+   <div class="msg hidden" id="msg"></div>
+   <div class="tableWrap">
+    <table>
+     <thead><tr><th>Correo</th><th>Plan</th><th>Usados</th><th>Disponibles</th><th>Estado</th><th>Acciones</th></tr></thead>
+     <tbody id="rows"></tbody>
+    </table>
+   </div>
+  </section>
+ </main>
+</div>
+<script>
+const API = location.origin;
+let adminSecret = "";
+const $=id=>document.getElementById(id);
+function message(text,type=""){const e=$("msg");e.textContent=text;e.className="msg "+(type||"");}
+function loginMessage(text,type=""){const e=$("loginMsg");e.textContent=text;e.className="msg "+(type||"");}
+async function err(r){try{const d=await r.json();return d.detail||"Error del servidor";}catch{return "Error del servidor";}}
+async function request(path,opt={}){
+ opt.headers={...(opt.headers||{}),"X-Admin-Secret":adminSecret};
+ const r=await fetch(API+path,opt);
+ if(!r.ok)throw new Error(await err(r));
+ return r.json();
+}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+async function stats(){
+ const d=await request("/api/admin/stats");
+ $("sTotal").textContent=d.stats.total;$("sTrial").textContent=d.stats.trial;$("sPremium").textContent=d.stats.premium;
+ $("sBlocked").textContent=d.stats.blocked;$("sProcessed").textContent=d.stats.processed;
+}
+function render(users){
+ const tbody=$("rows");tbody.innerHTML="";
+ if(!users.length){tbody.innerHTML='<tr><td colspan="6">No se encontraron usuarios.</td></tr>';return;}
+ users.forEach(u=>{
+  const tr=document.createElement("tr");
+  const remaining=u.premium?"ILIMITADO":u.remaining;
+  tr.innerHTML=`<td><b>${esc(u.email)}</b></td>
+  <td><span class="pill ${u.premium?"premium":"trial"}">${esc(u.plan)}</span></td>
+  <td>${esc(u.used)}</td><td>${esc(remaining)}</td>
+  <td><span class="pill ${u.active?"active":"blocked"}">${u.active?"ACTIVA":"BLOQUEADA"}</span></td>
+  <td><div class="actions">
+   ${u.premium?`<button class="secondary" data-act="trial">VOLVER A PRUEBA</button>`:`<button class="good" data-act="premium">ACTIVAR PREMIUM</button>`}
+   <button class="secondary" data-act="reset">REINICIAR 10</button>
+   <button class="${u.active?"danger":"good"}" data-act="active">${u.active?"BLOQUEAR":"DESBLOQUEAR"}</button>
+  </div></td>`;
+  tr.querySelectorAll("button").forEach(b=>b.onclick=()=>action(b.dataset.act,u));
+  tbody.appendChild(tr);
+ });
+}
+async function list(q=""){
+ try{
+  message("Cargando...");
+  const d=await request("/api/admin/users?q="+encodeURIComponent(q)+"&limit=100");
+  render(d.users);message(`${d.count} usuario(s) encontrado(s).`,"ok");
+ }catch(e){message(e.message,"err");}
+}
+async function post(path,data){
+ const fd=new FormData();Object.entries(data).forEach(([k,v])=>fd.append(k,v));
+ return request(path,{method:"POST",body:fd});
+}
+async function action(act,u){
+ try{
+  if(act==="premium"){
+   if(!confirm("¿Activar PREMIUM ilimitado para "+u.email+"?"))return;
+   await post("/api/admin/user/plan",{email:u.email,plan:"PREMIUM"});
+  }else if(act==="trial"){
+   if(!confirm("¿Volver esta cuenta al plan de prueba?"))return;
+   await post("/api/admin/user/plan",{email:u.email,plan:"TRIAL"});
+  }else if(act==="reset"){
+   if(!confirm("¿Restablecer los usos gratuitos a 10 para "+u.email+"?"))return;
+   await post("/api/admin/user/reset",{email:u.email});
+  }else if(act==="active"){
+   const next=!u.active;
+   if(!confirm(next?"¿Desbloquear esta cuenta?":"¿Bloquear esta cuenta?"))return;
+   await post("/api/admin/user/active",{email:u.email,active:String(next)});
+  }
+  await stats();await list($("query").value.trim());
+ }catch(e){message(e.message,"err");}
+}
+$("enter").onclick=async()=>{
+ adminSecret=$("secret").value;
+ if(!adminSecret){loginMessage("Ingresa tu clave de administrador.","err");return;}
+ try{
+  await stats();$("loginCard").classList.add("hidden");$("panel").classList.remove("hidden");$("secret").value="";await list();
+ }catch(e){adminSecret="";loginMessage(e.message,"err");}
+};
+$("secret").addEventListener("keydown",e=>{if(e.key==="Enter")$("enter").click();});
+$("exit").onclick=()=>{adminSecret="";$("panel").classList.add("hidden");$("loginCard").classList.remove("hidden");$("rows").innerHTML="";};
+$("searchBtn").onclick=()=>list($("query").value.trim());
+$("allBtn").onclick=()=>{$("query").value="";list();};
+$("query").addEventListener("keydown",e=>{if(e.key==="Enter")list($("query").value.trim());});
+</script>
+</body>
+</html>
