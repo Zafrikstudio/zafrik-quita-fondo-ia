@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V6.8</title>
+<title>ZAFRIK | ZAFRIK IA PRO V6.9</title>
 
 <style>
 *{box-sizing:border-box}
@@ -233,7 +233,7 @@ select{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V6.8
+  ZAFRIK IA PRO V6.9
  </span>
 
  <h1>
@@ -377,7 +377,7 @@ select{
    <div class="label">
     <span>Contraer / expandir borde</span>
     <span class="value" id="edgeV">
-     0
+     -2
     </span>
    </div>
 
@@ -386,7 +386,7 @@ select{
     type="range"
     min="-10"
     max="10"
-    value="0"
+    value="-2"
    >
 
   </div>
@@ -1230,6 +1230,9 @@ processBtn.addEventListener("click", async () => {
     fd.append("edge_only", document.getElementById("edgeOnly").checked ? "true" : "false");
     fd.append("manual_points", JSON.stringify(backgroundPoints));
     fd.append("hd_mode", hdMode);
+    fd.append("precision", document.getElementById("precision").value);
+    fd.append("halo", document.getElementById("halo").value);
+    fd.append("edge_adjust", document.getElementById("edge").value);
 
     progress(20, "Enviando imagen al servidor...");
     showStatus("ZAFRIK IA PRO está procesando la imagen...");
@@ -1398,7 +1401,7 @@ loadAccount();
 
 <script>
 /* ==========================================================
-   ZAFRIK IA PRO V6.8
+   ZAFRIK IA PRO V6.9
    ALTURA AUTOMÁTICA PARA IFRAME DE HOSTINGER
 ========================================================== */
 (function(){
