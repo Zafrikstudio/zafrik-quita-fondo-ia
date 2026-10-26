@@ -1,1523 +1,206 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V7.0</title>
+<!-- =====================================================
+     ZAFRIK IA PRO V6.7
+     HOSTINGER - ALTURA AUTOMÁTICA
+====================================================== -->
+
+<section id="zafrik-ia-pro">
 
 <style>
-*{box-sizing:border-box}
-:root{
- --ink:#101326; --muted:#667085; --line:#e4e8f0; --soft:#f6f8fc;
- --blue:#3267ff; --purple:#7449ff; --pink:#ff2d75; --orange:#ff9d24;
-}
-html{background:#fff}
-body{
- margin:0;
- font-family:Arial,Helvetica,sans-serif;
- background:
-  radial-gradient(circle at 7% 3%,rgba(57,182,255,.13),transparent 20%),
-  radial-gradient(circle at 92% 8%,rgba(255,61,133,.10),transparent 22%),
-  #fff;
- color:var(--ink);
-}
-button,input,select{font:inherit}
-button{transition:.2s}
-.app{width:min(1180px,calc(100% - 24px));margin:10px auto 24px}
+#zafrik-ia-pro{
+  width:100%;
+  max-width:1400px;
+  margin:0 auto;
+  padding:0;
 
-/* HERO */
-.hero{
- background:
-  radial-gradient(circle at 92% 0%,rgba(255,91,50,.13),transparent 29%),
-  radial-gradient(circle at 7% 8%,rgba(56,130,255,.17),transparent 30%),
-  linear-gradient(135deg,#f7fbff 0%,#fff 48%,#fff5fa 100%);
- border:1px solid var(--line);
- border-radius:24px;
- padding:26px 32px;
- box-shadow:0 16px 45px rgba(31,45,86,.08);
-}
-.badge{
- display:inline-flex;align-items:center;padding:8px 14px;border-radius:30px;
- font-size:12px;font-weight:900;color:#fff;
- background:linear-gradient(90deg,#376dff,#7c45ff,#ff2b78);
- box-shadow:0 8px 22px rgba(116,73,255,.20);
-}
-h1{margin:12px 0 7px;font-size:46px;line-height:1.02;letter-spacing:-1.5px}
-.grad{
- background:linear-gradient(90deg,#3568ff,#7548ff,#f13283,#ff7a32);
- -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.sub{color:#596174;max-width:850px;line-height:1.5;margin:0}
+  background:#f6f8fc;
 
-/* UPLOAD */
-.upload{
- margin-top:18px;width:100%;min-height:118px;border:2px dashed #aeb8d3;
- padding:20px;border-radius:18px;text-align:center;cursor:pointer;
- background:rgba(255,255,255,.86);transition:.2s;
- display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
- box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);
-}
-.upload:hover,.upload.drag{
- border-color:#6b55ff;background:#f8f6ff;transform:translateY(-1px);
-}
-.upload strong{display:block;width:100%;font-size:18px;line-height:1.25;color:#15182a;font-weight:900}
-.upload span{display:block;width:100%;color:#747b8c;font-size:14px;line-height:1.4}
-input[type=file]{display:none}
+  border-radius:22px;
 
-/* PANELS */
-.panel{
- margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:20px;
- padding:18px 20px;box-shadow:0 12px 36px rgba(29,42,78,.07);
-}
-.sectionTitle{font-weight:900;font-size:14px;margin-bottom:11px;color:#16192a}
-.small{color:var(--muted);font-size:12px;line-height:1.5}
+  /* IMPORTANTE:
+     no cortar el contenido */
+  overflow:visible;
 
-/* MODES */
-.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.mode{
- border:1px solid #d9deea;background:#f8f9fc;color:#50586c;padding:13px;
- border-radius:13px;cursor:pointer;font-weight:900;
-}
-.mode:hover{border-color:#9a8cff;background:#faf9ff}
-.mode.active{
- color:#fff;border-color:transparent;
- background:linear-gradient(90deg,#356cff,#704bff,#e53691);
- box-shadow:0 8px 20px rgba(104,76,255,.18);
+  box-sizing:border-box;
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.10);
 }
 
-/* CONTROLS */
-.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:13px}
-.control,.selectBox{
- background:#f8f9fc;border:1px solid #e2e6ef;border-radius:14px;padding:13px;
-}
-.label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;font-weight:900;margin-bottom:11px}
-.value{color:#6e48f5}
-input[type=range]{width:100%;accent-color:#7549ff;cursor:pointer}
-.scale{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-.scale button{
- border:1px solid #d9deea;background:#fff;color:#24283a;padding:10px 6px;border-radius:9px;cursor:pointer;font-weight:900
-}
-.scale button.active{
- color:#fff;background:linear-gradient(135deg,#396cff,#7b46ff);border-color:transparent;
- box-shadow:0 5px 15px rgba(86,79,238,.18)
-}
-.dtfOptions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.selectBox label{display:block;font-size:12px;font-weight:900;margin-bottom:10px}
-select{
- width:100%;border:1px solid #d7dce8;background:#fff;color:#22263a;border-radius:10px;padding:11px;outline:none
-}
-.toggle{min-height:100%;display:flex!important;align-items:center;gap:12px;cursor:pointer;margin:0!important}
-.toggle input{display:none}
-.switch{width:48px;height:26px;background:#c8cedb;border-radius:30px;position:relative;flex:0 0 auto;transition:.2s}
-.switch:after{content:"";width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s;box-shadow:0 2px 5px rgba(0,0,0,.18)}
-.toggle input:checked + .switch{background:linear-gradient(90deg,#4770ff,#ff357b)}
-.toggle input:checked + .switch:after{transform:translateX(22px)}
-.toggleText strong{display:block;font-size:13px;margin-bottom:4px}
-.toggleText span{color:#777f91;font-size:11px;line-height:1.4}
+#zafrik-ia-pro iframe{
+  display:block;
 
-/* PREVIEW */
-.previewHead{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
-.bgs{display:flex;gap:7px}
-.bgbtn{width:32px;height:32px;border-radius:50%;border:1px solid #cbd1df;cursor:pointer;padding:0;box-shadow:0 2px 6px rgba(0,0,0,.08)}
-.bg-trans{
- background:linear-gradient(45deg,#aaa 25%,transparent 25%),linear-gradient(-45deg,#aaa 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#aaa 75%),linear-gradient(-45deg,transparent 75%,#aaa 75%);
- background-size:10px 10px;background-position:0 0,0 5px,5px -5px,-5px 0;
-}
-.bg-white{background:#fff}.bg-black{background:#000}.bg-pink{background:#ff2b69}
-.preview{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.viewer{
- min-height:380px;border:1px solid #dfe3ec;border-radius:17px;overflow:hidden;position:relative;
- display:flex;align-items:center;justify-content:center;background-color:#111;
- background-image:linear-gradient(45deg,#222 25%,transparent 25%),linear-gradient(-45deg,#222 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#222 75%),linear-gradient(-45deg,transparent 75%,#222 75%);
- background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0;
-}
-.viewer img{display:block;max-width:100%;max-height:600px;object-fit:contain}
-.pickMarker{
- position:absolute;width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%);
- border:3px solid #fff;background:#ff2d77;box-shadow:0 0 0 2px #5b43ff,0 3px 10px rgba(0,0,0,.35);
- z-index:5;pointer-events:none
-}
-.tag{
- position:absolute;left:10px;top:10px;z-index:3;background:rgba(12,14,25,.86);color:#fff;
- border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:20px;font-size:11px;font-weight:900
-}
-.empty{color:#aaa5bd;text-align:center;padding:20px}
+  width:100%;
 
-/* ACTIONS */
-.actions{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:12px}
-.process{
- border:0;padding:15px;border-radius:14px;font-size:15px;font-weight:900;cursor:pointer;color:#fff;
- background:linear-gradient(90deg,#2d72ff,#7648ff,#ff2d77,#ff7838);
- box-shadow:0 9px 24px rgba(107,72,255,.20)
+  /* Altura inicial mientras carga Render */
+  height:2600px;
+
+  min-height:1200px;
+
+  margin:0;
+  padding:0;
+
+  border:0;
+  outline:0;
+
+  background:#f6f8fc;
+
+  transition:height .25s ease;
 }
-.process:hover{transform:translateY(-1px);filter:brightness(1.04)}
-.process:disabled{opacity:.6;cursor:wait;transform:none}
-.download{
- border:1px solid #d6dce9;padding:15px;border-radius:14px;font-weight:900;cursor:pointer;
- color:#1a1e31;background:#fff;box-shadow:0 5px 16px rgba(28,39,73,.06)
+
+/* TABLET */
+@media(max-width:900px){
+
+  #zafrik-ia-pro{
+    border-radius:18px;
+  }
+
+  #zafrik-ia-pro iframe{
+    min-height:1800px;
+  }
+
 }
-.download:hover:not(:disabled){border-color:#7a60ff;background:#faf9ff}
-.download:disabled{opacity:.4;cursor:not-allowed}
 
-/* PROGRESS / STATUS */
-.progressWrap{display:none;margin-top:15px;padding:15px;border-radius:14px;border:1px solid #e0e4ed;background:#f8f9fc}
-.progressWrap.show{display:block}
-.progressTop{display:flex;justify-content:space-between;gap:10px;font-size:12px;font-weight:900;margin-bottom:9px}
-.progress{height:8px;background:#e4e7ef;border-radius:20px;overflow:hidden}
-.progressBar{height:100%;width:0%;border-radius:20px;background:linear-gradient(90deg,#2e7cff,#744aff,#ff327b);transition:width .35s ease}
-.status{display:none;margin-top:14px;border-radius:13px;padding:14px;background:#f8f9fc;border:1px solid #e0e4ed;color:#596174;font-size:13px;line-height:1.5}
-.status.show{display:block}
-.status.good{background:#f0fff9;border-color:#8be2c3;color:#087b5e}
-.status.error{background:#fff4f6;border-color:#ffb2c4;color:#b21e48}
+/* CELULAR */
+@media(max-width:600px){
 
-/* ANALYSIS */
-.analysis{
- margin-top:17px;padding:19px;border-radius:17px;
- background:linear-gradient(135deg,#f5f9ff,#faf7ff 55%,#fff6fa);
- border:1px solid #dde3f1;
-}
-.analysisTitle{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:900;margin-bottom:13px;color:#15192b}
-.analysisGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-.stat{background:#fff;border:1px solid #e0e4ee;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(27,40,75,.04)}
-.stat span{display:block;color:#858da0;font-size:10px;text-transform:uppercase;font-weight:900;margin-bottom:5px}
-.stat strong{display:block;font-size:14px;word-break:break-word;color:#161a2c}
-.analysisMessage{margin-top:12px;color:#626a7c;font-size:12px;line-height:1.55}
+  #zafrik-ia-pro{
+    width:100%;
+    border-radius:12px;
+  }
 
+  #zafrik-ia-pro iframe{
+    min-height:2400px;
+  }
 
-/* CUENTA / PRUEBA / PREMIUM */
-.accountBar{margin:14px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(29,42,78,.06);flex-wrap:wrap}
-.accountInfo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.planBadge{padding:7px 11px;border-radius:20px;font-size:11px;font-weight:900;background:#f0edff;color:#6745e8}
-.planBadge.premium{background:#fff3d9;color:#9b6200}
-.accountEmail{font-size:12px;font-weight:800;color:#555e72}
-.accountActions{display:flex;gap:8px;flex-wrap:wrap}
-.miniBtn{border:1px solid #d8ddea;background:#fff;padding:9px 12px;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer}
-.premiumBtn{display:inline-block;border:0;color:#fff;background:linear-gradient(90deg,#356cff,#744aff,#ff327b,#ff8a32);padding:9px 13px;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer;text-decoration:none}
-.authGate{margin-top:14px;padding:18px;border-radius:18px;border:1px solid #e0e4ee;background:linear-gradient(135deg,#f5f9ff,#faf7ff 55%,#fff6fa)}
-.authGate h3{margin:0 0 6px;font-size:20px}.authGate p{margin:0 0 13px;color:#667085;font-size:13px;line-height:1.5}
-.authTabs{display:flex;gap:8px;margin-bottom:12px}.authTabs button{flex:1;border:1px solid #d9deea;background:#fff;padding:10px;border-radius:10px;font-weight:900;cursor:pointer}
-.authTabs button.active{color:#fff;border-color:transparent;background:linear-gradient(90deg,#356cff,#744aff,#ff327b)}
-.authForm{display:grid;grid-template-columns:1fr 1fr auto;gap:9px}
-.authForm input{width:100%;border:1px solid #d7dce8;background:#fff;padding:12px;border-radius:10px;outline:none}
-.authSubmit{border:0;color:#fff;font-weight:900;border-radius:10px;padding:12px 18px;cursor:pointer;background:linear-gradient(90deg,#356cff,#744aff,#ff327b)}
-.authMsg{margin-top:10px;font-size:12px;color:#667085}.authMsg.error{color:#b21e48}
-.premiumLock{display:none;margin-top:14px;padding:18px;text-align:center;border-radius:16px;border:1px solid #ffd0df;background:#fff7fa}
-.premiumLock.show{display:block}.premiumLock strong{display:block;font-size:18px;margin-bottom:7px}.premiumLock p{font-size:13px;color:#667085;margin:0 0 13px}
-@media(max-width:700px){.authForm{grid-template-columns:1fr}.accountBar{align-items:flex-start}}
-
-/* RESPONSIVE */
-@media(max-width:800px){
- .app{width:min(100% - 14px,1180px);margin-top:8px}
- .hero{padding:18px}
- h1{font-size:36px}
- .controls,.dtfOptions,.preview{grid-template-columns:1fr}
- .modes{grid-template-columns:1fr}
- .actions{grid-template-columns:1fr}
- .analysisGrid{grid-template-columns:1fr 1fr}
- .viewer{min-height:320px}
-}
-@media(max-width:450px){
- h1{font-size:31px}
- .hero,.panel{padding:16px}
- .analysisGrid{grid-template-columns:1fr}
 }
 </style>
-</head>
 
-<body>
 
-<div class="app">
+<iframe
+  id="zafrik-ia-frame"
 
-<!-- HERO -->
+  src="https://zafrik-quita-fondo-ia.onrender.com"
 
-<section class="hero">
+  title="ZAFRIK IA PRO"
 
- <span class="badge">
-  ZAFRIK IA PRO V7.0
- </span>
+  loading="eager"
 
- <h1>
-  Quita el fondo.<br>
-  <span class="grad">
-   Prepara tu diseño.
-  </span>
- </h1>
+  scrolling="no"
 
- <p class="sub">
-  Eliminación de fondo con IA, limpieza profesional de bordes,
-  preparación DTF, mejora de imagen y salida PNG transparente
-  hasta 4X con metadatos de 300 DPI.
- </p>
-
- <label class="upload" id="drop">
-
-  <input
-   type="file"
-   id="file"
-   accept="image/png,image/jpeg,image/webp"
-  >
-
-  <strong>
-   ↑ SUBIR IMAGEN
-  </strong>
-
-  <span>
-   PNG · JPG · WEBP — máximo 15 MB
-  </span>
-
- </label>
-
-</section>
-
-<section class="accountBar">
- <div class="accountInfo">
-  <span class="planBadge" id="planBadge">PRUEBA GRATIS · 10/10</span>
-  <span class="accountEmail" id="accountEmail">Inicia sesión para usar ZAFRIK IA PRO</span>
- </div>
- <div class="accountActions">
-  <button class="miniBtn" id="logoutBtn" hidden>CERRAR SESIÓN</button>
-  <a class="premiumBtn" href="https://wa.me/50688488952?text=Hola%20ZAFRIK%20Studio,%20quiero%20activar%20ZAFRIK%20PREMIUM" target="_blank" rel="noopener">ACTIVAR PREMIUM</a>
- </div>
-</section>
-
-<section class="authGate" id="authGate">
- <h3>🎁 Prueba ZAFRIK IA PRO gratis</h3>
- <p>Crea tu cuenta y procesa hasta <b>10 imágenes gratis</b>. Después puedes activar Premium para continuar sin límite.</p>
- <div class="authTabs">
-  <button class="active" id="tabRegister" type="button">CREAR CUENTA</button>
-  <button id="tabLogin" type="button">INICIAR SESIÓN</button>
- </div>
- <form class="authForm" id="authForm">
-  <input type="email" id="authEmail" placeholder="Correo electrónico" required>
-  <input type="password" id="authPassword" placeholder="Contraseña · mínimo 6 caracteres" minlength="6" required>
-  <button class="authSubmit" id="authSubmit" type="submit">CREAR CUENTA GRATIS</button>
- </form>
- <div class="authMsg" id="authMsg">Tus usos se guardan en tu cuenta.</div>
-</section>
-
-
-<!-- CONFIGURACION -->
-
-<section class="panel">
-
- <div class="sectionTitle">
-  MODO DE IMPRESIÓN
- </div>
-
- <div class="modes">
-
-  <button
-   class="mode active"
-   data-mode="DTF"
-  >
-   DTF
-  </button>
-
-  <button
-   class="mode"
-   data-mode="DTG"
-  >
-   DTG
-  </button>
-
-  <button
-   class="mode"
-   data-mode="SUBLIMACION"
-  >
-   SUBLIMACIÓN
-  </button>
-
- </div>
-
-
- <div class="controls">
-
-  <div class="control">
-
-   <div class="label">
-    <span>Precisión IA</span>
-    <span class="value" id="precisionV">
-     90%
-    </span>
-   </div>
-
-   <input
-    id="precision"
-    type="range"
-    min="50"
-    max="100"
-    value="90"
-   >
-
-  </div>
-
-
-  <div class="control">
-
-   <div class="label">
-    <span>Eliminar halo</span>
-    <span class="value" id="haloV">
-     55%
-    </span>
-   </div>
-
-   <input
-    id="halo"
-    type="range"
-    min="0"
-    max="100"
-    value="55"
-   >
-
-  </div>
-
-
-  <div class="control">
-
-   <div class="label">
-    <span>Contraer / expandir borde</span>
-    <span class="value" id="edgeV">
-     0
-    </span>
-   </div>
-
-   <input
-    id="edge"
-    type="range"
-    min="-10"
-    max="10"
-    value="0"
-   >
-
-  </div>
-
-
-  <div class="control">
-
-   <div class="label">
-    <span>Tolerancia precisa de fondo</span>
-    <span class="value" id="bgTolV">18%</span>
-   </div>
-
-   <input
-    id="bgTol"
-    type="range"
-    min="0"
-    max="100"
-    value="18"
-   >
-
-   <label style="display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:12px;font-weight:800;line-height:1.4;cursor:pointer">
-    <input id="edgeOnly" type="checkbox" checked style="width:auto;margin-top:2px">
-    <span>Proteger interior del diseño — borrar únicamente el fondo conectado a los bordes</span>
-   </label>
-
-   <div style="font-size:11px;color:#687186;margin-top:8px;line-height:1.45">
-    Recomendado: 10–25%. Si borra parte del diseño, baja la tolerancia.
-   </div>
-
-   <div style="margin-top:12px;padding:11px;border:1px solid #dfe3ec;border-radius:12px;background:#fff">
-    <label style="display:flex;gap:9px;align-items:flex-start;font-size:12px;font-weight:900;cursor:pointer">
-     <input id="pickBg" type="checkbox" style="width:auto;margin-top:2px">
-     <span>🎯 Seleccionar fondo manualmente</span>
-    </label>
-    <div style="font-size:11px;color:#687186;margin-top:6px;line-height:1.45">
-     Actívalo y haz clic en las zonas de fondo que todavía quieres borrar. No selecciones partes del diseño.
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap">
-     <strong id="pickCount" style="font-size:11px">0 zonas seleccionadas</strong>
-     <button type="button" id="clearPicks" style="border:1px solid #d8deea;background:#f5f7fb;border-radius:9px;padding:7px 10px;font-size:10px;font-weight:900;cursor:pointer">
-      LIMPIAR SELECCIÓN
-     </button>
-    </div>
-   </div>
-
-  </div>
-
-
-  <div class="control">
-
-   <div class="label">
-    <span>Limpieza extra DTF</span>
-    <span class="value">BORDE LIMPIO</span>
-   </div>
-
-   <label style="display:flex;gap:9px;align-items:flex-start;margin-top:8px;font-size:12px;font-weight:800;line-height:1.4;cursor:pointer">
-    <input id="removeShadow" type="checkbox" checked style="width:auto;margin-top:2px">
-    <span>Eliminar sombra gris del suelo</span>
-   </label>
-
-   <div style="font-size:11px;color:#687186;margin-top:8px;line-height:1.45">
-    Recomendado para diseños DTF con sombra blanca/gris debajo. Desactívalo si la sombra forma parte del diseño.
-   </div>
-
-  </div>
-
-
-  <div class="control">
-
-   <div class="label">
-    <span>Mejora HD</span>
-    <span class="value" id="hdModeV">ILUSTRACIÓN / LOGO</span>
-   </div>
-
-   <div class="scale" id="hdModeButtons">
-    <button type="button" class="active" data-hd="ILUSTRACION">ILUSTRACIÓN / LOGO</button>
-    <button type="button" data-hd="FOTO">FOTOGRAFÍA</button>
-   </div>
-
-   <div style="font-size:11px;color:#687186;margin-top:8px;line-height:1.45">
-    Ilustración/Logo suaviza bordes pixelados antes de ampliar y recupera los contornos después.
-   </div>
-
-  </div>
-
-
-  <div class="control">
-
-   <div class="label">
-    <span>Nitidez</span>
-    <span class="value" id="sharpV">
-     35%
-    </span>
-   </div>
-
-   <input
-    id="sharp"
-    type="range"
-    min="0"
-    max="100"
-    value="35"
-   >
-
-  </div>
-
-
-  <div class="control">
-
-   <div class="label">
-    <span>Resolución final</span>
-    <span class="value" id="scaleV">
-     1X
-    </span>
-   </div>
-
-   <div class="scale">
-
-    <button
-     class="active"
-     data-scale="1"
-    >
-     1X
-    </button>
-
-    <button data-scale="2">
-     2X
-    </button>
-
-    <button data-scale="3">
-     3X
-    </button>
-
-    <button data-scale="4">
-     4X
-    </button>
-
-   </div>
-
-  </div>
-
-
-  <div class="control">
-
-   <div class="label">
-    <span>Salida</span>
-    <span class="value">
-     PNG
-    </span>
-   </div>
-
-   <div class="small">
-    Transparencia real · Alta calidad · 300 DPI
-   </div>
-
-  </div>
-
- </div>
-
-
- <!-- OPCIONES DTF -->
-
- <div class="dtfOptions" id="dtfOptions">
-
-  <div class="selectBox">
-
-   <label for="nivelDTF">
-    LIMPIEZA DTF
-   </label>
-
-   <select id="nivelDTF">
-
-    <option value="suave">
-     Suave — fotografías y cabello
-    </option>
-
-    <option
-     value="normal"
-     selected
-    >
-     Normal — uso general
-    </option>
-
-    <option value="fuerte">
-     Fuerte — logos y diseños sólidos
-    </option>
-
-   </select>
-
-  </div>
-
-
-  <div class="selectBox">
-
-   <label class="toggle">
-
-    <input
-     type="checkbox"
-     id="details"
-     checked
-    >
-
-    <span class="switch"></span>
-
-    <span class="toggleText">
-
-     <strong>
-      Conservar detalles finos
-     </strong>
-
-     <span>
-      Protege cabello, pelaje y bordes delicados.
-     </span>
-
-    </span>
-
-   </label>
-
-  </div>
-
- </div>
-
-</section>
-
-
-<!-- PREVIEW -->
-
-<section class="panel">
-
- <div class="previewHead">
-
-  <div class="sectionTitle">
-   VISTA PREVIA
-  </div>
-
-  <div class="bgs">
-
-   <button
-    class="bgbtn bg-trans"
-    data-bg="trans"
-    title="Transparente"
-   ></button>
-
-   <button
-    class="bgbtn bg-white"
-    data-bg="white"
-    title="Blanco"
-   ></button>
-
-   <button
-    class="bgbtn bg-black"
-    data-bg="black"
-    title="Negro"
-   ></button>
-
-   <button
-    class="bgbtn bg-pink"
-    data-bg="#ff2b69"
-    title="Color"
-   ></button>
-
-  </div>
-
- </div>
-
-
- <div class="preview">
-
-  <div class="viewer">
-
-   <span class="tag">
-    ANTES
-   </span>
-
-   <div
-    class="empty"
-    id="emptyBefore"
-   >
-    Sube una imagen para comenzar
-   </div>
-
-   <img
-    id="before"
-    alt=""
-    hidden
-   >
-
-  </div>
-
-
-  <div class="viewer">
-
-   <span class="tag">
-    DESPUÉS
-   </span>
-
-   <div
-    class="empty"
-    id="emptyAfter"
-   >
-    El resultado aparecerá aquí
-   </div>
-
-   <img
-    id="after"
-    alt=""
-    hidden
-   >
-
-  </div>
-
- </div>
-
-
- <!-- ACCIONES -->
-
- <div class="actions">
-
-  <button
-   class="process"
-   id="process"
-  >
-   ✨ PROCESAR CON IA PRO
-  </button>
-
-  <button
-   class="download"
-   id="download"
-   disabled
-  >
-   DESCARGAR PNG
-  </button>
-
- </div>
-
-
- <div class="premiumLock" id="premiumLock">
- <strong>⭐ Has utilizado tus 10 imágenes gratuitas</strong>
- <p>Activa ZAFRIK PREMIUM para seguir procesando imágenes sin límite.</p>
- <a class="premiumBtn" href="https://wa.me/50688488952?text=Hola%20ZAFRIK%20Studio,%20ya%20utilicé%20mis%2010%20imágenes%20gratis%20y%20quiero%20activar%20PREMIUM" target="_blank" rel="noopener">QUIERO ZAFRIK PREMIUM</a>
-</div>
-
-<!-- PROGRESO -->
-
- <div
-  class="progressWrap"
-  id="progressWrap"
- >
-
-  <div class="progressTop">
-
-   <span id="progressText">
-    Preparando...
-   </span>
-
-   <span id="progressPercent">
-    0%
-   </span>
-
-  </div>
-
-  <div class="progress">
-
-   <div
-    class="progressBar"
-    id="progressBar"
-   ></div>
-
-  </div>
-
- </div>
-
-
- <div
-  class="status"
-  id="status"
- ></div>
-
-
- <!-- ANALISIS -->
-
- <div class="analysis">
-
-  <div class="analysisTitle">
-   🔎 ANÁLISIS DTF PRO
-  </div>
-
-  <div class="analysisGrid">
-
-   <div class="stat">
-    <span>Archivo</span>
-    <strong id="statSize">
-     —
-    </strong>
-   </div>
-
-   <div class="stat">
-    <span>Salida</span>
-    <strong id="statOutput">
-     —
-    </strong>
-   </div>
-
-   <div class="stat">
-    <span>DPI</span>
-    <strong id="statDPI">
-     —
-    </strong>
-   </div>
-
-   <div class="stat">
-    <span>Semitransparentes</span>
-    <strong id="statSemi">
-     —
-    </strong>
-   </div>
-
-  </div>
-
-  <div
-   class="analysisMessage"
-   id="analysisMessage"
-  >
-   Sube una imagen para analizarla antes de imprimir.
-  </div>
-
- </div>
-
-</section>
-
-</div>
+  allow="clipboard-read; clipboard-write"
+></iframe>
 
 
 <script>
-const API_URL = "https://zafrik-quita-fondo-ia.onrender.com";
-
-const file = document.getElementById("file");
-const drop = document.getElementById("drop");
-const before = document.getElementById("before");
-const after = document.getElementById("after");
-const processBtn = document.getElementById("process");
-const downloadBtn = document.getElementById("download");
-const statusBox = document.getElementById("status");
-const progressWrap = document.getElementById("progressWrap");
-const progressBar = document.getElementById("progressBar");
-const progressText = document.getElementById("progressText");
-const progressPercent = document.getElementById("progressPercent");
-const statSize = document.getElementById("statSize");
-const statOutput = document.getElementById("statOutput");
-const statDPI = document.getElementById("statDPI");
-const statSemi = document.getElementById("statSemi");
-const analysisMessage = document.getElementById("analysisMessage");
-
-let selectedFile = null;
-let resultBlob = null;
-let resultURL = null;
-let beforeURL = null;
-let scale = 1;
-let hdMode = "ILUSTRACION";
-let mode = "DTF";
-let authMode = "register";
-let authToken = localStorage.getItem("zafrik_ia_token") || "";
-let currentUser = null;
-let backgroundPoints = [];
-
-const authGate = document.getElementById("authGate");
-const authForm = document.getElementById("authForm");
-const authEmail = document.getElementById("authEmail");
-const authPassword = document.getElementById("authPassword");
-const authSubmit = document.getElementById("authSubmit");
-const authMsg = document.getElementById("authMsg");
-const tabRegister = document.getElementById("tabRegister");
-const tabLogin = document.getElementById("tabLogin");
-const planBadge = document.getElementById("planBadge");
-const accountEmail = document.getElementById("accountEmail");
-const logoutBtn = document.getElementById("logoutBtn");
-const premiumLock = document.getElementById("premiumLock");
-const pickBg = document.getElementById("pickBg");
-const pickCount = document.getElementById("pickCount");
-const clearPicks = document.getElementById("clearPicks");
-
-function setAuthMode(name){
-  authMode = name;
-  tabRegister.classList.toggle("active", name === "register");
-  tabLogin.classList.toggle("active", name === "login");
-  authSubmit.textContent = name === "register" ? "CREAR CUENTA GRATIS" : "INICIAR SESIÓN";
-  authMsg.textContent = name === "register" ? "Recibirás 10 imágenes gratuitas." : "Ingresa con tu cuenta de ZAFRIK IA PRO.";
-  authMsg.className = "authMsg";
-}
-tabRegister.addEventListener("click",()=>setAuthMode("register"));
-tabLogin.addEventListener("click",()=>setAuthMode("login"));
-
-function renderUser(user){
-  currentUser = user || null;
-  if(!user){
-    authGate.style.display = "block";
-    logoutBtn.hidden = true;
-    accountEmail.textContent = "Inicia sesión para usar ZAFRIK IA PRO";
-    planBadge.textContent = "PRUEBA GRATIS · 10/10";
-    planBadge.className = "planBadge";
-    if (premiumLock) premiumLock.classList.remove("show");
-    return;
-  }
-  authGate.style.display = "none";
-  logoutBtn.hidden = false;
-  accountEmail.textContent = user.email;
-  if(user.premium){
-    planBadge.textContent = "PREMIUM · ILIMITADO";
-    planBadge.className = "planBadge premium";
-    if (premiumLock) premiumLock.classList.remove("show");
-  }else{
-    planBadge.textContent = `PRUEBA GRATIS · ${user.remaining}/${user.limit} DISPONIBLES`;
-    planBadge.className = "planBadge";
-    if (premiumLock) premiumLock.classList.toggle("show", Number(user.remaining) <= 0);
-  }
-}
-
-async function loadAccount(){
-  if(!authToken){ renderUser(null); return; }
-  try{
-    const r = await fetch(API_URL + "/api/auth/me", {
-      headers: {"Authorization":"Bearer " + authToken},
-      cache:"no-store"
-    });
-    if(!r.ok) throw new Error("Sesión inválida");
-    const d = await r.json();
-    renderUser(d.user);
-  }catch(_){
-    authToken = "";
-    localStorage.removeItem("zafrik_ia_token");
-    renderUser(null);
-  }
-}
-
-authForm.addEventListener("submit", async e => {
-  e.preventDefault();
-  authSubmit.disabled = true;
-  authMsg.textContent = "Conectando...";
-  authMsg.className = "authMsg";
-  try{
-    const fd = new FormData();
-    fd.append("email", authEmail.value.trim());
-    fd.append("password", authPassword.value);
-    const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login";
-    const r = await fetch(API_URL + endpoint, {method:"POST", body:fd});
-    if(!r.ok) throw new Error(await readServerError(r));
-    const d = await r.json();
-    authToken = d.token;
-    localStorage.setItem("zafrik_ia_token", authToken);
-    authPassword.value = "";
-    renderUser(d.user);
-    showStatus(authMode === "register" ? "Cuenta creada. Tienes 10 imágenes gratuitas." : "Sesión iniciada correctamente.", "good");
-  }catch(err){
-    authMsg.textContent = err.message || "No se pudo iniciar sesión.";
-    authMsg.className = "authMsg error";
-  }finally{
-    authSubmit.disabled = false;
-  }
-});
-
-logoutBtn.addEventListener("click", () => {
-  authToken = "";
-  currentUser = null;
-  localStorage.removeItem("zafrik_ia_token");
-  renderUser(null);
-  showStatus("Sesión cerrada.");
-});
-
-function showStatus(text, type = "") {
-  statusBox.textContent = text;
-  statusBox.className = "status show " + type;
-}
-
-function progress(value, text) {
-  progressWrap.classList.add("show");
-  progressBar.style.width = value + "%";
-  progressPercent.textContent = value + "%";
-  progressText.textContent = text;
-}
-
-function hideProgress() {
-  setTimeout(() => progressWrap.classList.remove("show"), 1200);
-}
-
-function formatBytes(bytes) {
-  return (bytes / 1024 / 1024).toFixed(2) + " MB";
-}
-
-function getImageInfo(f) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(f);
-    const img = new Image();
-
-    img.onload = () => {
-      const info = {
-        width: img.naturalWidth,
-        height: img.naturalHeight
-      };
-      URL.revokeObjectURL(url);
-      resolve(info);
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("No se pudo leer la imagen seleccionada."));
-    };
-
-    img.src = url;
-  });
-}
-
-function updatePickCount(){
-  if(pickCount) pickCount.textContent =
-    `${backgroundPoints.length} zona${backgroundPoints.length===1?"":"s"} seleccionada${backgroundPoints.length===1?"":"s"}`;
-}
-
-function clearBackgroundPicks(){
-  backgroundPoints = [];
-  document.querySelectorAll(".pickMarker").forEach(x=>x.remove());
-  updatePickCount();
-}
-
-function addPickMarker(clientX, clientY){
-  const viewer = before.closest(".viewer");
-  const vr = viewer.getBoundingClientRect();
-  const marker = document.createElement("span");
-  marker.className = "pickMarker";
-  marker.style.left = (clientX - vr.left) + "px";
-  marker.style.top = (clientY - vr.top) + "px";
-  viewer.appendChild(marker);
-}
-
-before.addEventListener("click", e => {
-  if(!pickBg || !pickBg.checked || !selectedFile || before.hidden) return;
-
-  const r = before.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width;
-  const y = (e.clientY - r.top) / r.height;
-
-  if(x < 0 || x > 1 || y < 0 || y > 1) return;
-  if(backgroundPoints.length >= 20){
-    showStatus("Máximo 20 zonas de fondo por procesamiento.", "error");
-    return;
-  }
-
-  backgroundPoints.push({x:Number(x.toFixed(6)), y:Number(y.toFixed(6))});
-  addPickMarker(e.clientX, e.clientY);
-  updatePickCount();
-  showStatus("Zona de fondo marcada. Puedes seleccionar otras zonas y luego procesar.", "good");
-});
-
-if(clearPicks) clearPicks.addEventListener("click", clearBackgroundPicks);
-
-async function loadFile(f) {
-  if (!f) return;
-
-  const allowed = ["image/png", "image/jpeg", "image/webp"];
-
-  if (!allowed.includes(f.type)) {
-    showStatus("Formato no permitido. Usa PNG, JPG o WEBP.", "error");
-    return;
-  }
-
-  if (f.size > 15 * 1024 * 1024) {
-    showStatus("La imagen supera el límite máximo de 15 MB.", "error");
-    return;
-  }
-
-  selectedFile = f;
-  clearBackgroundPicks();
-  resultBlob = null;
-  downloadBtn.disabled = true;
-
-  if (resultURL) {
-    URL.revokeObjectURL(resultURL);
-    resultURL = null;
-  }
-
-  after.hidden = true;
-  document.getElementById("emptyAfter").hidden = false;
-
-  if (beforeURL) URL.revokeObjectURL(beforeURL);
-
-  beforeURL = URL.createObjectURL(f);
-  before.src = beforeURL;
-  before.hidden = false;
-  document.getElementById("emptyBefore").hidden = true;
-
-  statOutput.textContent = "Pendiente";
-  statDPI.textContent = "Pendiente";
-  statSemi.textContent = "Pendiente";
-
-  showStatus("Analizando imagen...");
-
-  try {
-    const info = await getImageInfo(f);
-    const megapixels = ((info.width * info.height) / 1000000).toFixed(2);
-
-    statSize.textContent = `${info.width} × ${info.height}px`;
-
-    analysisMessage.innerHTML =
-      `Imagen detectada: <b>${megapixels} MP</b> · ` +
-      `${formatBytes(f.size)} · ` +
-      `${f.type.replace("image/", "").toUpperCase()} · ` +
-      `Lista para procesar con ZAFRIK IA PRO.`;
-
-    showStatus("Imagen cargada correctamente. Lista para procesar.", "good");
-  } catch (error) {
-    showStatus(error.message, "error");
-  }
-}
-
-file.addEventListener("change", () => loadFile(file.files[0]));
-
-["dragenter", "dragover"].forEach(eventName => {
-  drop.addEventListener(eventName, e => {
-    e.preventDefault();
-    drop.classList.add("drag");
-  });
-});
-
-["dragleave", "drop"].forEach(eventName => {
-  drop.addEventListener(eventName, e => {
-    e.preventDefault();
-    drop.classList.remove("drag");
-  });
-});
-
-drop.addEventListener("drop", e => {
-  const f = e.dataTransfer.files[0];
-  loadFile(f);
-});
-
-document.querySelectorAll(".mode").forEach(button => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll(".mode").forEach(x => x.classList.remove("active"));
-    button.classList.add("active");
-    mode = button.dataset.mode;
-
-    document.getElementById("dtfOptions").style.display =
-      mode === "DTF" ? "grid" : "none";
-  });
-});
-
-document.querySelectorAll("#hdModeButtons button").forEach(button => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll("#hdModeButtons button").forEach(x => x.classList.remove("active"));
-    button.classList.add("active");
-    hdMode = button.dataset.hd || "ILUSTRACION";
-    document.getElementById("hdModeV").textContent =
-      hdMode === "FOTO" ? "FOTOGRAFÍA" : "ILUSTRACIÓN / LOGO";
-  });
-});
-
-document.querySelectorAll(".scale button").forEach(button => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll(".scale button").forEach(x => x.classList.remove("active"));
-    button.classList.add("active");
-    scale = Number(button.dataset.scale);
-    document.getElementById("scaleV").textContent = scale + "X";
-  });
-});
-
-[
-  ["precision", "precisionV", "%"],
-  ["halo", "haloV", "%"],
-  ["edge", "edgeV", ""],
-  ["sharp", "sharpV", "%"]
-].forEach(item => {
-  const input = document.getElementById(item[0]);
-  const output = document.getElementById(item[1]);
-
-  input.addEventListener("input", () => {
-    output.textContent = input.value + item[2];
-  });
-});
-
-document.querySelectorAll(".bgbtn").forEach(button => {
-  button.addEventListener("click", () => {
-    const bg = button.dataset.bg;
-
-    document.querySelectorAll(".viewer").forEach(viewer => {
-      if (bg === "trans") {
-        viewer.style.backgroundColor = "#111";
-        viewer.style.backgroundImage =
-          "linear-gradient(45deg,#222 25%,transparent 25%)," +
-          "linear-gradient(-45deg,#222 25%,transparent 25%)," +
-          "linear-gradient(45deg,transparent 75%,#222 75%)," +
-          "linear-gradient(-45deg,transparent 75%,#222 75%)";
-        viewer.style.backgroundSize = "22px 22px";
-        viewer.style.backgroundPosition = "0 0,0 11px,11px -11px,-11px 0";
-      } else {
-        viewer.style.backgroundImage = "none";
-        viewer.style.backgroundColor = bg;
-      }
-    });
-  });
-});
-
-async function readServerError(response) {
-  const clone = response.clone();
-
-  try {
-    const data = await response.json();
-    if (data.detail) {
-      return typeof data.detail === "string"
-        ? data.detail
-        : JSON.stringify(data.detail);
-    }
-    if (data.error) return typeof data.error === "string" ? data.error : JSON.stringify(data.error);
-    if (data.message) return data.message;
-  } catch (_) {}
-
-  try {
-    const text = await clone.text();
-    if (text) return text.slice(0, 500);
-  } catch (_) {}
-
-  return `No fue posible procesar la imagen. Error ${response.status}.`;
-}
-
-document.getElementById("bgTol").addEventListener("input", e => {
-  document.getElementById("bgTolV").textContent = e.target.value + "%";
-});
-
-processBtn.addEventListener("click", async () => {
-  if (!authToken || !currentUser) {
-    showStatus("Debes crear una cuenta o iniciar sesión para procesar imágenes.", "error");
-    authGate.scrollIntoView({behavior:"smooth",block:"center"});
-    return;
-  }
-
-  if (!currentUser.premium && Number(currentUser.remaining) <= 0) {
-    if (premiumLock) premiumLock.classList.add("show");
-    showStatus("Has utilizado tus 10 imágenes gratuitas. Activa ZAFRIK PREMIUM para continuar.", "error");
-    return;
-  }
-
-  if (!selectedFile) {
-    showStatus("Primero debes subir una imagen.", "error");
-    return;
-  }
-
-  processBtn.disabled = true;
-  processBtn.textContent = "⏳ PROCESANDO...";
-  downloadBtn.disabled = true;
-
-  let timers = [];
-
-  try {
-    progress(8, "Preparando imagen...");
-
-    const fd = new FormData();
-
-    // Nombres exactos que espera main.py V5.2
-    fd.append("image", selectedFile, selectedFile.name);
-    fd.append("scale", String(scale));
-    fd.append("sharpness", document.getElementById("sharp").value);
-    fd.append("mode", mode);
-    fd.append("bg_tolerance", document.getElementById("bgTol").value);
-    fd.append("edge_only", document.getElementById("edgeOnly").checked ? "true" : "false");
-    fd.append("manual_points", JSON.stringify(backgroundPoints));
-    fd.append("hd_mode", hdMode);
-    fd.append("precision", document.getElementById("precision").value);
-    fd.append("halo", document.getElementById("halo").value);
-    fd.append("edge_adjust", document.getElementById("edge").value);
-    fd.append("remove_shadow", document.getElementById("removeShadow").checked ? "true" : "false");
-
-    progress(20, "Enviando imagen al servidor...");
-    showStatus("ZAFRIK IA PRO está procesando la imagen...");
-
-    timers.push(setTimeout(() => progress(38, "IA eliminando fondo..."), 900));
-    timers.push(setTimeout(() => progress(58, "Preparando transparencia..."), 2200));
-    timers.push(setTimeout(() => progress(72, "Mejorando imagen..."), 3800));
-    timers.push(setTimeout(() => progress(84, "Preparando resolución final..."), 5500));
-
-    const response = await fetch(API_URL + "/api/process", {
-      method: "POST",
-      headers: {"Authorization": "Bearer " + authToken},
-      body: fd
-    });
-
-    timers.forEach(clearTimeout);
-    timers = [];
-
-    if (!response.ok) {
-      const message = await readServerError(response);
-      if (response.status === 401) {
-        authToken = "";
-        currentUser = null;
-        localStorage.removeItem("zafrik_ia_token");
-        renderUser(null);
-      }
-      if (response.status === 402 || response.status === 403) {
-        await loadAccount();
-        if (premiumLock) premiumLock.classList.add("show");
-      }
-      throw new Error(message);
-    }
-
-    progress(92, "Generando PNG transparente...");
-
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.toLowerCase().includes("image/png")) {
-      throw new Error("El servidor no devolvió un PNG válido.");
-    }
-
-    resultBlob = await response.blob();
-
-    if (!resultBlob || resultBlob.size === 0) {
-      throw new Error("El servidor devolvió un archivo vacío.");
-    }
-
-    if (resultURL) URL.revokeObjectURL(resultURL);
-    resultURL = URL.createObjectURL(resultBlob);
-
-    after.src = resultURL;
-    after.hidden = false;
-    document.getElementById("emptyAfter").hidden = true;
-
-    const finalWidth = response.headers.get("X-Final-Width");
-    const finalHeight = response.headers.get("X-Final-Height");
-    const realScale = response.headers.get("X-Scale-Applied") || scale;
-    const dpi = response.headers.get("X-DPI") || "300";
-    const dpiVerified = response.headers.get("X-DPI-Verified");
-    const physVerified = response.headers.get("X-PNG-pHYs");
-    const ppmX = response.headers.get("X-Pixels-Per-Meter-X");
-    const ppmY = response.headers.get("X-Pixels-Per-Meter-Y");
-    const usesRemaining = response.headers.get("X-Uses-Remaining");
-    const usesUsed = response.headers.get("X-Uses-Used");
-    const userPlan = response.headers.get("X-User-Plan");
-
-    if (currentUser) {
-      if ((userPlan || "").toUpperCase() === "PREMIUM") {
-        currentUser.premium = true;
-        currentUser.plan = "PREMIUM";
-        currentUser.remaining = null;
-      } else if (usesRemaining !== null && usesRemaining !== "unlimited") {
-        currentUser.remaining = Number(usesRemaining);
-        if (usesUsed !== null) currentUser.used = Number(usesUsed);
-      }
-      renderUser(currentUser);
-    }
-
-    statOutput.textContent =
-      finalWidth && finalHeight
-        ? `${finalWidth} × ${finalHeight}px`
-        : `${realScale}X`;
-
-    statDPI.textContent =
-      dpiVerified === "true"
-        ? `${dpi} DPI ✓`
-        : `${dpi} DPI`;
-
-    statSemi.textContent =
-      physVerified === "verified"
-        ? "pHYs ✓"
-        : "Procesado";
-
-    const dpiInfo =
-      dpiVerified === "true" && physVerified === "verified"
-        ? `<b>${dpi} DPI verificado ✓</b> · pHYs verificado ✓` +
-          (ppmX && ppmY ? ` · ${ppmX}×${ppmY} px/m` : "")
-        : `<b>${dpi} DPI</b>`;
-
-    analysisMessage.innerHTML =
-      `${backgroundPoints.length ? "Fondo seleccionado manualmente ✓ · " : "Fondo eliminado ✓ · "}` +
-      `Protección interior ✓ · Transparencia real ✓ · ` +
-      `Modo <b>${mode}</b> · Escala aplicada <b>${realScale}X</b> · ` +
-      dpiInfo + `.`;
-
-    downloadBtn.disabled = false;
-
-    progress(100, "¡Archivo listo!");
-
-    showStatus(
-      "Procesamiento terminado. PNG transparente preparado correctamente.",
-      "good"
-    );
-
-    hideProgress();
-
-  } catch (error) {
-    timers.forEach(clearTimeout);
-    progressBar.style.width = "0%";
-
-    showStatus(
-      error.message || "No fue posible procesar la imagen.",
-      "error"
-    );
-
-    hideProgress();
-  } finally {
-    processBtn.disabled = false;
-    processBtn.textContent = "✨ PROCESAR CON IA PRO";
-  }
-});
-
-downloadBtn.addEventListener("click", () => {
-  if (!resultBlob || !resultURL) return;
-
-  const a = document.createElement("a");
-  a.href = resultURL;
-  a.download = "ZAFRIK-IA-PRO-300DPI.png";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-});
-
-async function checkServer() {
-  try {
-    const response = await fetch(API_URL + "/api/status", {
-      cache: "no-store"
-    });
-
-    if (!response.ok) return;
-
-    const data = await response.json();
-    console.log("ZAFRIK IA PRO:", data);
-
-    if (data.ok && data.remove_bg_configured) {
-      console.log("Servidor y remove.bg listos.");
-    }
-  } catch (error) {
-    console.log("Servidor iniciando o temporalmente dormido.");
-  }
-}
-
-checkServer();
-loadAccount();
-</script>
-
-
-<script>
-/* ==========================================================
-   ZAFRIK IA PRO V7.0
-   ALTURA AUTOMÁTICA PARA IFRAME DE HOSTINGER
-========================================================== */
 (function(){
-  let lastHeight = 0;
-  let timer = null;
 
-  function getZafrikHeight(){
-    const body = document.body;
-    const html = document.documentElement;
+  const iframe =
+    document.getElementById("zafrik-ia-frame");
 
-    return Math.max(
-      body ? body.scrollHeight : 0,
-      body ? body.offsetHeight : 0,
-      html ? html.scrollHeight : 0,
-      html ? html.offsetHeight : 0,
-      html ? html.clientHeight : 0
-    );
-  }
+  if(!iframe) return;
 
-  function sendZafrikHeight(force){
-    if(window.parent === window) return;
 
-    const height = Math.ceil(getZafrikHeight());
+  /* =========================================
+     RECIBIR ALTURA DESDE ZAFRIK IA PRO
+  ========================================= */
 
-    if(!force && Math.abs(height - lastHeight) < 3) return;
+  window.addEventListener(
+    "message",
+    function(event){
 
-    lastHeight = height;
+      /* SEGURIDAD:
+         aceptar únicamente mensajes
+         provenientes de nuestro Render */
+      if(
+        event.origin !==
+        "https://zafrik-quita-fondo-ia.onrender.com"
+      ){
+        return;
+      }
 
-    window.parent.postMessage(
-      {
-        type: "ZAFRIK_HEIGHT",
-        height: height
-      },
-      "*"
-    );
-  }
 
-  function scheduleHeight(){
-    clearTimeout(timer);
-    timer = setTimeout(function(){
-      sendZafrikHeight(false);
-    }, 80);
-  }
+      const data = event.data;
 
-  window.addEventListener("load", function(){
-    sendZafrikHeight(true);
+      if(
+        !data ||
+        data.type !== "ZAFRIK_HEIGHT"
+      ){
+        return;
+      }
 
-    setTimeout(function(){ sendZafrikHeight(true); }, 300);
-    setTimeout(function(){ sendZafrikHeight(true); }, 1000);
-    setTimeout(function(){ sendZafrikHeight(true); }, 3000);
-  });
 
-  window.addEventListener("resize", scheduleHeight);
+      let height =
+        Number(data.height);
 
-  window.addEventListener("message", function(event){
-    if(
-      event.data &&
-      event.data.type === "ZAFRIK_REQUEST_HEIGHT"
-    ){
-      sendZafrikHeight(true);
+
+      if(
+        !Number.isFinite(height) ||
+        height < 500
+      ){
+        return;
+      }
+
+
+      /* margen inferior adicional */
+      height =
+        Math.ceil(height) + 30;
+
+
+      iframe.style.height =
+        height + "px";
+
     }
-  });
+  );
 
-  if("ResizeObserver" in window){
-    const ro = new ResizeObserver(scheduleHeight);
 
-    if(document.documentElement) ro.observe(document.documentElement);
-    if(document.body) ro.observe(document.body);
-  }
+  /* =========================================
+     ALTURA DE SEGURIDAD AL CARGAR
+  ========================================= */
 
-  if("MutationObserver" in window && document.body){
-    const mo = new MutationObserver(scheduleHeight);
+  iframe.addEventListener(
+    "load",
+    function(){
 
-    mo.observe(document.body,{
-      childList:true,
-      subtree:true,
-      attributes:true,
-      characterData:false
-    });
-  }
+      /* Render puede tardar unos segundos
+         en despertar en el plan gratuito */
 
-  document.addEventListener("click", function(){
-    setTimeout(scheduleHeight, 50);
-    setTimeout(scheduleHeight, 350);
-  });
+      setTimeout(function(){
 
-  document.addEventListener("change", function(){
-    setTimeout(scheduleHeight, 50);
-    setTimeout(scheduleHeight, 350);
-  });
+        try{
 
-  setInterval(function(){
-    sendZafrikHeight(false);
-  }, 1500);
+          iframe.contentWindow.postMessage(
+            {
+              type:
+              "ZAFRIK_REQUEST_HEIGHT"
+            },
+            "https://zafrik-quita-fondo-ia.onrender.com"
+          );
+
+        }catch(e){}
+
+      },1000);
+
+
+      setTimeout(function(){
+
+        try{
+
+          iframe.contentWindow.postMessage(
+            {
+              type:
+              "ZAFRIK_REQUEST_HEIGHT"
+            },
+            "https://zafrik-quita-fondo-ia.onrender.com"
+          );
+
+        }catch(e){}
+
+      },3000);
+
+    }
+  );
+
 })();
 </script>
 
-</body>
-</html>
+</section>
