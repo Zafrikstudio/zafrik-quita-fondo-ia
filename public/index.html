@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V5.6</title>
+<title>ZAFRIK | ZAFRIK IA PRO V6.0</title>
 
 <style>
 *{box-sizing:border-box}
@@ -178,6 +178,28 @@ select{
 .stat strong{display:block;font-size:14px;word-break:break-word;color:#161a2c}
 .analysisMessage{margin-top:12px;color:#626a7c;font-size:12px;line-height:1.55}
 
+
+/* CUENTA / PRUEBA / PREMIUM */
+.accountBar{margin:14px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(29,42,78,.06);flex-wrap:wrap}
+.accountInfo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.planBadge{padding:7px 11px;border-radius:20px;font-size:11px;font-weight:900;background:#f0edff;color:#6745e8}
+.planBadge.premium{background:#fff3d9;color:#9b6200}
+.accountEmail{font-size:12px;font-weight:800;color:#555e72}
+.accountActions{display:flex;gap:8px;flex-wrap:wrap}
+.miniBtn{border:1px solid #d8ddea;background:#fff;padding:9px 12px;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer}
+.premiumBtn{display:inline-block;border:0;color:#fff;background:linear-gradient(90deg,#356cff,#744aff,#ff327b,#ff8a32);padding:9px 13px;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer;text-decoration:none}
+.authGate{margin-top:14px;padding:18px;border-radius:18px;border:1px solid #e0e4ee;background:linear-gradient(135deg,#f5f9ff,#faf7ff 55%,#fff6fa)}
+.authGate h3{margin:0 0 6px;font-size:20px}.authGate p{margin:0 0 13px;color:#667085;font-size:13px;line-height:1.5}
+.authTabs{display:flex;gap:8px;margin-bottom:12px}.authTabs button{flex:1;border:1px solid #d9deea;background:#fff;padding:10px;border-radius:10px;font-weight:900;cursor:pointer}
+.authTabs button.active{color:#fff;border-color:transparent;background:linear-gradient(90deg,#356cff,#744aff,#ff327b)}
+.authForm{display:grid;grid-template-columns:1fr 1fr auto;gap:9px}
+.authForm input{width:100%;border:1px solid #d7dce8;background:#fff;padding:12px;border-radius:10px;outline:none}
+.authSubmit{border:0;color:#fff;font-weight:900;border-radius:10px;padding:12px 18px;cursor:pointer;background:linear-gradient(90deg,#356cff,#744aff,#ff327b)}
+.authMsg{margin-top:10px;font-size:12px;color:#667085}.authMsg.error{color:#b21e48}
+.premiumLock{display:none;margin-top:14px;padding:18px;text-align:center;border-radius:16px;border:1px solid #ffd0df;background:#fff7fa}
+.premiumLock.show{display:block}.premiumLock strong{display:block;font-size:18px;margin-bottom:7px}.premiumLock p{font-size:13px;color:#667085;margin:0 0 13px}
+@media(max-width:700px){.authForm{grid-template-columns:1fr}.accountBar{align-items:flex-start}}
+
 /* RESPONSIVE */
 @media(max-width:800px){
  .app{width:min(100% - 14px,1180px);margin-top:8px}
@@ -206,7 +228,7 @@ select{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V5.6
+  ZAFRIK IA PRO V6.0
  </span>
 
  <h1>
@@ -240,6 +262,32 @@ select{
 
  </label>
 
+</section>
+
+<section class="accountBar">
+ <div class="accountInfo">
+  <span class="planBadge" id="planBadge">PRUEBA GRATIS · 10/10</span>
+  <span class="accountEmail" id="accountEmail">Inicia sesión para usar ZAFRIK IA PRO</span>
+ </div>
+ <div class="accountActions">
+  <button class="miniBtn" id="logoutBtn" hidden>CERRAR SESIÓN</button>
+  <a class="premiumBtn" href="https://wa.me/50688488952?text=Hola%20ZAFRIK%20Studio,%20quiero%20activar%20ZAFRIK%20PREMIUM" target="_blank" rel="noopener">ACTIVAR PREMIUM</a>
+ </div>
+</section>
+
+<section class="authGate" id="authGate">
+ <h3>🎁 Prueba ZAFRIK IA PRO gratis</h3>
+ <p>Crea tu cuenta y procesa hasta <b>10 imágenes gratis</b>. Después puedes activar Premium para continuar sin límite.</p>
+ <div class="authTabs">
+  <button class="active" id="tabRegister" type="button">CREAR CUENTA</button>
+  <button id="tabLogin" type="button">INICIAR SESIÓN</button>
+ </div>
+ <form class="authForm" id="authForm">
+  <input type="email" id="authEmail" placeholder="Correo electrónico" required>
+  <input type="password" id="authPassword" placeholder="Contraseña · mínimo 6 caracteres" minlength="6" required>
+  <button class="authSubmit" id="authSubmit" type="submit">CREAR CUENTA GRATIS</button>
+ </form>
+ <div class="authMsg" id="authMsg">Tus usos se guardan en tu cuenta.</div>
 </section>
 
 
@@ -705,6 +753,109 @@ let resultURL = null;
 let beforeURL = null;
 let scale = 1;
 let mode = "DTF";
+let authMode = "register";
+let authToken = localStorage.getItem("zafrik_ia_token") || "";
+let currentUser = null;
+
+const authGate = document.getElementById("authGate");
+const authForm = document.getElementById("authForm");
+const authEmail = document.getElementById("authEmail");
+const authPassword = document.getElementById("authPassword");
+const authSubmit = document.getElementById("authSubmit");
+const authMsg = document.getElementById("authMsg");
+const tabRegister = document.getElementById("tabRegister");
+const tabLogin = document.getElementById("tabLogin");
+const planBadge = document.getElementById("planBadge");
+const accountEmail = document.getElementById("accountEmail");
+const logoutBtn = document.getElementById("logoutBtn");
+const premiumLock = document.getElementById("premiumLock");
+
+function setAuthMode(name){
+  authMode = name;
+  tabRegister.classList.toggle("active", name === "register");
+  tabLogin.classList.toggle("active", name === "login");
+  authSubmit.textContent = name === "register" ? "CREAR CUENTA GRATIS" : "INICIAR SESIÓN";
+  authMsg.textContent = name === "register" ? "Recibirás 10 imágenes gratuitas." : "Ingresa con tu cuenta de ZAFRIK IA PRO.";
+  authMsg.className = "authMsg";
+}
+tabRegister.addEventListener("click",()=>setAuthMode("register"));
+tabLogin.addEventListener("click",()=>setAuthMode("login"));
+
+function renderUser(user){
+  currentUser = user || null;
+  if(!user){
+    authGate.style.display = "block";
+    logoutBtn.hidden = true;
+    accountEmail.textContent = "Inicia sesión para usar ZAFRIK IA PRO";
+    planBadge.textContent = "PRUEBA GRATIS · 10/10";
+    planBadge.className = "planBadge";
+    premiumLock.classList.remove("show");
+    return;
+  }
+  authGate.style.display = "none";
+  logoutBtn.hidden = false;
+  accountEmail.textContent = user.email;
+  if(user.premium){
+    planBadge.textContent = "PREMIUM · ILIMITADO";
+    planBadge.className = "planBadge premium";
+    premiumLock.classList.remove("show");
+  }else{
+    planBadge.textContent = `PRUEBA GRATIS · ${user.remaining}/${user.limit} DISPONIBLES`;
+    planBadge.className = "planBadge";
+    premiumLock.classList.toggle("show", Number(user.remaining) <= 0);
+  }
+}
+
+async function loadAccount(){
+  if(!authToken){ renderUser(null); return; }
+  try{
+    const r = await fetch(API_URL + "/api/auth/me", {
+      headers: {"Authorization":"Bearer " + authToken},
+      cache:"no-store"
+    });
+    if(!r.ok) throw new Error("Sesión inválida");
+    const d = await r.json();
+    renderUser(d.user);
+  }catch(_){
+    authToken = "";
+    localStorage.removeItem("zafrik_ia_token");
+    renderUser(null);
+  }
+}
+
+authForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  authSubmit.disabled = true;
+  authMsg.textContent = "Conectando...";
+  authMsg.className = "authMsg";
+  try{
+    const fd = new FormData();
+    fd.append("email", authEmail.value.trim());
+    fd.append("password", authPassword.value);
+    const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+    const r = await fetch(API_URL + endpoint, {method:"POST", body:fd});
+    if(!r.ok) throw new Error(await readServerError(r));
+    const d = await r.json();
+    authToken = d.token;
+    localStorage.setItem("zafrik_ia_token", authToken);
+    authPassword.value = "";
+    renderUser(d.user);
+    showStatus(authMode === "register" ? "Cuenta creada. Tienes 10 imágenes gratuitas." : "Sesión iniciada correctamente.", "good");
+  }catch(err){
+    authMsg.textContent = err.message || "No se pudo iniciar sesión.";
+    authMsg.className = "authMsg error";
+  }finally{
+    authSubmit.disabled = false;
+  }
+});
+
+logoutBtn.addEventListener("click", () => {
+  authToken = "";
+  currentUser = null;
+  localStorage.removeItem("zafrik_ia_token");
+  renderUser(null);
+  showStatus("Sesión cerrada.");
+});
 
 function showStatus(text, type = "") {
   statusBox.textContent = text;
@@ -907,6 +1058,18 @@ async function readServerError(response) {
 }
 
 processBtn.addEventListener("click", async () => {
+  if (!authToken || !currentUser) {
+    showStatus("Debes crear una cuenta o iniciar sesión para procesar imágenes.", "error");
+    authGate.scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
+
+  if (!currentUser.premium && Number(currentUser.remaining) <= 0) {
+    premiumLock.classList.add("show");
+    showStatus("Has utilizado tus 10 imágenes gratuitas. Activa ZAFRIK PREMIUM para continuar.", "error");
+    return;
+  }
+
   if (!selectedFile) {
     showStatus("Primero debes subir una imagen.", "error");
     return;
@@ -939,6 +1102,7 @@ processBtn.addEventListener("click", async () => {
 
     const response = await fetch(API_URL + "/api/process", {
       method: "POST",
+      headers: {"Authorization": "Bearer " + authToken},
       body: fd
     });
 
@@ -946,7 +1110,18 @@ processBtn.addEventListener("click", async () => {
     timers = [];
 
     if (!response.ok) {
-      throw new Error(await readServerError(response));
+      const message = await readServerError(response);
+      if (response.status === 401) {
+        authToken = "";
+        currentUser = null;
+        localStorage.removeItem("zafrik_ia_token");
+        renderUser(null);
+      }
+      if (response.status === 402 || response.status === 403) {
+        await loadAccount();
+        premiumLock.classList.add("show");
+      }
+      throw new Error(message);
     }
 
     progress(92, "Generando PNG transparente...");
@@ -977,6 +1152,21 @@ processBtn.addEventListener("click", async () => {
     const physVerified = response.headers.get("X-PNG-pHYs");
     const ppmX = response.headers.get("X-Pixels-Per-Meter-X");
     const ppmY = response.headers.get("X-Pixels-Per-Meter-Y");
+    const usesRemaining = response.headers.get("X-Uses-Remaining");
+    const usesUsed = response.headers.get("X-Uses-Used");
+    const userPlan = response.headers.get("X-User-Plan");
+
+    if (currentUser) {
+      if ((userPlan || "").toUpperCase() === "PREMIUM") {
+        currentUser.premium = true;
+        currentUser.plan = "PREMIUM";
+        currentUser.remaining = null;
+      } else if (usesRemaining !== null && usesRemaining !== "unlimited") {
+        currentUser.remaining = Number(usesRemaining);
+        if (usesUsed !== null) currentUser.used = Number(usesUsed);
+      }
+      renderUser(currentUser);
+    }
 
     statOutput.textContent =
       finalWidth && finalHeight
@@ -1062,6 +1252,7 @@ async function checkServer() {
 }
 
 checkServer();
+loadAccount();
 </script>
 
 </body>
