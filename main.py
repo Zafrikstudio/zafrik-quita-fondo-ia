@@ -1,5 +1,7 @@
 import os
 import io
+import struct
+import zlib
 
 import requests
 from PIL import Image, ImageEnhance
@@ -9,14 +11,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V5.3
+# ZAFRIK IA PRO V5.4
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="5.3.0",
+    version="5.4.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -76,7 +78,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "5.3.0",
+                "version": "5.4.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -98,7 +100,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "5.3.0"
+        "version": "5.4.0"
     }
 
 
@@ -115,7 +117,7 @@ def api_status():
         "ok": True,
         "server": "online",
         "remove_bg_configured": bool(api_key),
-        "version": "5.3.0"
+        "version": "5.4.0"
     }
 
 
@@ -425,38 +427,111 @@ def resize_safe(
 # GUARDAR PNG CON 300 DPI REALES
 # ============================================================
 
+def add_png_phys_300dpi(png_data: bytes) -> bytes:
+    """
+    Inserta explícitamente el chunk PNG pHYs.
+    300 DPI = 11811 píxeles por metro aproximadamente.
+    Esto evita depender únicamente de cómo Pillow escriba el DPI.
+    """
+    signature = b"\x89PNG\r\n\x1a\n"
+
+    if not png_data.startswith(signature):
+        raise ValueError("El archivo generado no es un PNG válido.")
+
+    ppm = 11811
+    phys_payload = struct.pack(">IIB", ppm, ppm, 1)
+    chunk_type = b"pHYs"
+    crc = zlib.crc32(chunk_type + phys_payload) & 0xffffffff
+    phys_chunk = (
+        struct.pack(">I", len(phys_payload)) +
+        chunk_type +
+        phys_payload +
+        struct.pack(">I", crc)
+    )
+
+    # Eliminar cualquier pHYs existente para no duplicarlo.
+    pos = len(signature)
+    chunks = []
+
+    while pos + 12 <= len(png_data):
+        length = struct.unpack(">I", png_data[pos:pos + 4])[0]
+        chunk_end = pos + 12 + length
+
+        if chunk_end > len(png_data):
+            raise ValueError("PNG incompleto o dañado.")
+
+        chunk = png_data[pos:chunk_end]
+        chunk_name = png_data[pos + 4:pos + 8]
+
+        if chunk_name != b"pHYs":
+            chunks.append((chunk_name, chunk))
+
+        pos = chunk_end
+
+        if chunk_name == b"IEND":
+            break
+
+    # pHYs debe aparecer antes de IDAT.
+    output = bytearray(signature)
+    inserted = False
+
+    for chunk_name, chunk in chunks:
+        if chunk_name == b"IDAT" and not inserted:
+            output.extend(phys_chunk)
+            inserted = True
+
+        output.extend(chunk)
+
+    if not inserted:
+        raise ValueError("No se encontró el chunk IDAT del PNG.")
+
+    return bytes(output)
+
+
 def save_png_300_dpi(image: Image.Image) -> bytes:
     """
-    Guarda el PNG con transparencia y metadato físico equivalente
-    a 300 DPI. Pillow escribe el chunk pHYs del PNG a partir de dpi.
-    Luego reabrimos el archivo para verificar que el metadato exista.
+    Guarda RGBA y fuerza un pHYs equivalente a 300 DPI.
+    Después verifica tanto el chunk pHYs como la lectura de Pillow.
     """
-
     output = io.BytesIO()
 
     image.save(
         output,
         format="PNG",
         optimize=False,
-        compress_level=6,
-        dpi=(300.0, 300.0)
+        compress_level=6
     )
 
     png_data = output.getvalue()
     output.close()
 
-    # Verificación interna. PNG expresa la resolución en píxeles/metro,
-    # por eso al leerlo normalmente aparece ~299.9994 DPI.
+    png_data = add_png_phys_300dpi(png_data)
+
+    # Verificación binaria del chunk pHYs.
+    if b"pHYs" not in png_data:
+        raise HTTPException(
+            status_code=500,
+            detail="No se pudo insertar el metadato físico de 300 DPI."
+        )
+
+    # Verificación adicional con Pillow.
     try:
         check = Image.open(io.BytesIO(png_data))
         saved_dpi = check.info.get("dpi")
+        check.load()
         check.close()
 
         if not saved_dpi or len(saved_dpi) < 2:
-            raise ValueError("El PNG no contiene metadato DPI.")
+            raise ValueError("Pillow no detectó el DPI.")
 
-        if abs(float(saved_dpi[0]) - 300.0) > 1.0 or abs(float(saved_dpi[1]) - 300.0) > 1.0:
+        if (
+            abs(float(saved_dpi[0]) - 300.0) > 1.0 or
+            abs(float(saved_dpi[1]) - 300.0) > 1.0
+        ):
             raise ValueError(f"DPI inesperado: {saved_dpi}")
+
+    except HTTPException:
+        raise
 
     except Exception as error:
         print(
@@ -466,7 +541,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
         )
         raise HTTPException(
             status_code=500,
-            detail="No se pudo generar el PNG final con 300 DPI."
+            detail="El PNG se creó, pero no se pudo verificar a 300 DPI."
         )
 
     return png_data
@@ -594,7 +669,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "5.3.0",
+                "5.4.0",
 
                 "X-Original-Width":
                 str(original_width),
