@@ -17,14 +17,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V6.2
+# ZAFRIK IA PRO V6.3
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="6.2.0",
+    version="6.3.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -99,6 +99,8 @@ def init_database():
           user_id INTEGER NOT NULL REFERENCES zafrik_ia_users(id) ON DELETE CASCADE,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )""")
+        cur.execute("ALTER TABLE zafrik_ia_users ADD COLUMN IF NOT EXISTS premium_started_at TIMESTAMPTZ")
+        cur.execute("ALTER TABLE zafrik_ia_users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMPTZ")
         con.commit(); cur.close(); con.close()
         print("ZAFRIK IA DB LISTA",flush=True)
     except Exception as e:
@@ -111,13 +113,50 @@ def startup_database():
 def clean_email(v):
     return str(v or "").strip().lower()
 
+def iso_value(v):
+    return v.isoformat() if v else None
+
 def user_public(r):
     plan=str(r["plan"] or "TRIAL").upper()
     used=int(r["used_count"] or 0); limit=int(r["free_limit"] or FREE_LIMIT)
+    started = r.get("premium_started_at") if hasattr(r, "get") else None
+    expires = r.get("premium_expires_at") if hasattr(r, "get") else None
+    created = r.get("created_at") if hasattr(r, "get") else None
+    updated = r.get("updated_at") if hasattr(r, "get") else None
     return {"id":r["id"],"email":r["email"],"plan":plan,
             "premium":plan=="PREMIUM","used":used,"limit":limit,
             "remaining":None if plan=="PREMIUM" else max(0,limit-used),
-            "active":bool(r["is_active"])}
+            "active":bool(r["is_active"]),
+            "created_at":iso_value(created),
+            "updated_at":iso_value(updated),
+            "premium_started_at":iso_value(started),
+            "premium_expires_at":iso_value(expires)}
+
+def expire_premium_for_user(uid=None):
+    con=db_connect()
+    try:
+        cur=con.cursor()
+        if uid is None:
+            cur.execute("""
+                UPDATE zafrik_ia_users
+                SET plan='TRIAL', premium_started_at=NULL,
+                    premium_expires_at=NULL, updated_at=NOW()
+                WHERE UPPER(plan)='PREMIUM'
+                  AND premium_expires_at IS NOT NULL
+                  AND premium_expires_at <= NOW()
+            """)
+        else:
+            cur.execute("""
+                UPDATE zafrik_ia_users
+                SET plan='TRIAL', premium_started_at=NULL,
+                    premium_expires_at=NULL, updated_at=NOW()
+                WHERE id=%s AND UPPER(plan)='PREMIUM'
+                  AND premium_expires_at IS NOT NULL
+                  AND premium_expires_at <= NOW()
+            """,(uid,))
+        con.commit()
+    finally:
+        con.close()
 
 def make_token(uid,email):
     now=datetime.now(timezone.utc)
@@ -136,7 +175,7 @@ def auth_id(authorization):
 
 def get_user(uid,lock=False):
     con=db_connect(); cur=con.cursor(cursor_factory=RealDictCursor)
-    q="""SELECT id,email,password_hash,plan,free_limit,used_count,is_active
+    q="""SELECT id,email,password_hash,plan,free_limit,used_count,is_active,created_at,updated_at,premium_started_at,premium_expires_at
          FROM zafrik_ia_users WHERE id=%s"""
     if lock:q+=" FOR UPDATE"
     cur.execute(q,(uid,)); r=cur.fetchone()
@@ -161,7 +200,7 @@ def register(email:str=Form(...),password:str=Form(...)):
         cur=con.cursor(cursor_factory=RealDictCursor)
         cur.execute("""INSERT INTO zafrik_ia_users(email,password_hash)
                        VALUES(%s,%s)
-                       RETURNING id,email,plan,free_limit,used_count,is_active""",(email,ph))
+                       RETURNING id,email,plan,free_limit,used_count,is_active,created_at,updated_at,premium_started_at,premium_expires_at""",(email,ph))
         r=cur.fetchone();con.commit()
         return {"ok":True,"token":make_token(r["id"],r["email"]),"user":user_public(r)}
     except psycopg2.IntegrityError:
@@ -174,7 +213,7 @@ def login(email:str=Form(...),password:str=Form(...)):
     con=db_connect()
     try:
         cur=con.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""SELECT id,email,password_hash,plan,free_limit,used_count,is_active
+        cur.execute("""SELECT id,email,password_hash,plan,free_limit,used_count,is_active,created_at,updated_at,premium_started_at,premium_expires_at
                        FROM zafrik_ia_users WHERE email=%s""",(clean_email(email),))
         r=cur.fetchone()
         if not r or not bcrypt.checkpw(password.encode(),r["password_hash"].encode()):
@@ -186,11 +225,14 @@ def login(email:str=Form(...),password:str=Form(...)):
 
 @app.get("/api/auth/me")
 def me(authorization:str|None=Header(default=None)):
-    con,cur,r=get_user(auth_id(authorization))
+    uid=auth_id(authorization)
+    expire_premium_for_user(uid)
+    con,cur,r=get_user(uid)
     try:return {"ok":True,"user":user_public(r)}
     finally:cur.close();con.close()
 
 def reserve_use(uid):
+    expire_premium_for_user(uid)
     con,cur,r=get_user(uid,True)
     try:
         if str(r["plan"]).upper()=="PREMIUM":
@@ -247,6 +289,7 @@ def admin_users(
     x_admin_secret: str | None = Header(default=None)
 ):
     require_admin(x_admin_secret)
+    expire_premium_for_user()
 
     q = clean_email(q)
     limit = max(1, min(int(limit or 50), 100))
@@ -259,7 +302,7 @@ def admin_users(
         if q:
             cur.execute("""
                 SELECT id,email,plan,free_limit,used_count,is_active,
-                       created_at,updated_at
+                       created_at,updated_at,premium_started_at,premium_expires_at
                 FROM zafrik_ia_users
                 WHERE LOWER(email) LIKE %s
                 ORDER BY id DESC
@@ -268,7 +311,7 @@ def admin_users(
         else:
             cur.execute("""
                 SELECT id,email,plan,free_limit,used_count,is_active,
-                       created_at,updated_at
+                       created_at,updated_at,premium_started_at,premium_expires_at
                 FROM zafrik_ia_users
                 ORDER BY id DESC
                 LIMIT %s
@@ -322,6 +365,7 @@ def admin_user(
 def admin_set_plan(
     email: str = Form(...),
     plan: str = Form(...),
+    months: int = Form(1),
     x_admin_secret: str | None = Header(default=None)
 ):
     require_admin(x_admin_secret)
@@ -330,38 +374,88 @@ def admin_set_plan(
     plan = str(plan or "").strip().upper()
 
     if plan not in ("TRIAL", "PREMIUM"):
-        raise HTTPException(
-            status_code=400,
-            detail="El plan debe ser TRIAL o PREMIUM."
-        )
+        raise HTTPException(status_code=400,detail="El plan debe ser TRIAL o PREMIUM.")
+
+    if plan == "PREMIUM" and months not in (1, 6, 12):
+        raise HTTPException(status_code=400,detail="Premium debe ser de 1, 6 o 12 meses.")
 
     con = db_connect()
-
     try:
         cur = con.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-            UPDATE zafrik_ia_users
-            SET plan=%s, updated_at=NOW()
-            WHERE email=%s
-            RETURNING id,email,plan,free_limit,used_count,is_active
-        """, (plan, email))
-        row = cur.fetchone()
 
+        if plan == "PREMIUM":
+            cur.execute("""
+                UPDATE zafrik_ia_users
+                SET plan='PREMIUM',
+                    premium_started_at=NOW(),
+                    premium_expires_at=NOW() + (%s * INTERVAL '1 month'),
+                    updated_at=NOW()
+                WHERE email=%s
+                RETURNING id,email,plan,free_limit,used_count,is_active,
+                          created_at,updated_at,premium_started_at,premium_expires_at
+            """, (months, email))
+        else:
+            cur.execute("""
+                UPDATE zafrik_ia_users
+                SET plan='TRIAL',
+                    premium_started_at=NULL,
+                    premium_expires_at=NULL,
+                    updated_at=NOW()
+                WHERE email=%s
+                RETURNING id,email,plan,free_limit,used_count,is_active,
+                          created_at,updated_at,premium_started_at,premium_expires_at
+            """, (email,))
+
+        row = cur.fetchone()
         if not row:
             con.rollback()
-            raise HTTPException(
-                status_code=404,
-                detail="Usuario no encontrado."
-            )
+            raise HTTPException(status_code=404,detail="Usuario no encontrado.")
 
         con.commit()
-
         return {
             "ok": True,
-            "message": f"Plan actualizado a {plan}.",
+            "message": f"Premium activado por {months} mes(es)." if plan=="PREMIUM" else "Cuenta devuelta a prueba.",
             "user": user_public(row)
         }
+    finally:
+        con.close()
 
+
+@app.post("/api/admin/user/renew")
+def admin_renew_premium(
+    email: str = Form(...),
+    months: int = Form(...),
+    x_admin_secret: str | None = Header(default=None)
+):
+    require_admin(x_admin_secret)
+
+    email = clean_email(email)
+    if months not in (1, 6, 12):
+        raise HTTPException(status_code=400,detail="La renovación debe ser de 1, 6 o 12 meses.")
+
+    con=db_connect()
+    try:
+        cur=con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            UPDATE zafrik_ia_users
+            SET plan='PREMIUM',
+                premium_started_at=COALESCE(premium_started_at,NOW()),
+                premium_expires_at=
+                    GREATEST(COALESCE(premium_expires_at,NOW()),NOW())
+                    + (%s * INTERVAL '1 month'),
+                updated_at=NOW()
+            WHERE email=%s
+            RETURNING id,email,plan,free_limit,used_count,is_active,
+                      created_at,updated_at,premium_started_at,premium_expires_at
+        """,(months,email))
+        row=cur.fetchone()
+        if not row:
+            con.rollback()
+            raise HTTPException(status_code=404,detail="Usuario no encontrado.")
+        con.commit()
+        return {"ok":True,
+                "message":f"Premium renovado por {months} mes(es).",
+                "user":user_public(row)}
     finally:
         con.close()
 
@@ -382,7 +476,7 @@ def admin_reset_uses(
             UPDATE zafrik_ia_users
             SET used_count=0, updated_at=NOW()
             WHERE email=%s
-            RETURNING id,email,plan,free_limit,used_count,is_active
+            RETURNING id,email,plan,free_limit,used_count,is_active,created_at,updated_at,premium_started_at,premium_expires_at
         """, (email,))
         row = cur.fetchone()
 
@@ -427,7 +521,7 @@ def admin_set_active(
             UPDATE zafrik_ia_users
             SET is_active=%s, updated_at=NOW()
             WHERE email=%s
-            RETURNING id,email,plan,free_limit,used_count,is_active
+            RETURNING id,email,plan,free_limit,used_count,is_active,created_at,updated_at,premium_started_at,premium_expires_at
         """, (active, email))
         row = cur.fetchone()
 
@@ -455,6 +549,7 @@ def admin_stats(
     x_admin_secret: str | None = Header(default=None)
 ):
     require_admin(x_admin_secret)
+    expire_premium_for_user()
 
     con = db_connect()
 
@@ -502,7 +597,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.2.0",
+                "version": "6.3.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -538,7 +633,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.2.0",
+                "version": "6.3.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -560,7 +655,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "6.2.0"
+        "version": "6.3.0"
     }
 
 
@@ -580,7 +675,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "6.2.0"
+        "version": "6.3.0"
     }
 
 
