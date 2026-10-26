@@ -1432,19 +1432,36 @@ processBtn.addEventListener("click", async () => {
     const finalHeight = response.headers.get("X-Final-Height");
     const realScale = response.headers.get("X-Scale-Applied") || scale;
     const dpi = response.headers.get("X-DPI") || "300";
+    const dpiVerified = response.headers.get("X-DPI-Verified");
+    const physVerified = response.headers.get("X-PNG-pHYs");
+    const ppmX = response.headers.get("X-Pixels-Per-Meter-X");
+    const ppmY = response.headers.get("X-Pixels-Per-Meter-Y");
 
     statOutput.textContent =
       finalWidth && finalHeight
         ? `${finalWidth} × ${finalHeight}px`
         : `${realScale}X`;
 
-    statDPI.textContent = `${dpi} DPI`;
-    statSemi.textContent = "Procesado";
+    statDPI.textContent =
+      dpiVerified === "true"
+        ? `${dpi} DPI ✓`
+        : `${dpi} DPI`;
+
+    statSemi.textContent =
+      physVerified === "verified"
+        ? "pHYs ✓"
+        : "Procesado";
+
+    const dpiInfo =
+      dpiVerified === "true" && physVerified === "verified"
+        ? `<b>${dpi} DPI verificado ✓</b> · pHYs verificado ✓` +
+          (ppmX && ppmY ? ` · ${ppmX}×${ppmY} px/m` : "")
+        : `<b>${dpi} DPI</b>`;
 
     analysisMessage.innerHTML =
       `Fondo eliminado con IA ✓ · Transparencia real ✓ · ` +
       `Modo <b>${mode}</b> · Escala aplicada <b>${realScale}X</b> · ` +
-      `<b>${dpi} DPI</b>.`;
+      dpiInfo + `.`;
 
     downloadBtn.disabled = false;
 
