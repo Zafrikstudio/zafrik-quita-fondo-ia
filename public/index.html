@@ -636,7 +636,13 @@ select{
  </div>
 
 
- <!-- PROGRESO -->
+ <div class="premiumLock" id="premiumLock">
+ <strong>⭐ Has utilizado tus 10 imágenes gratuitas</strong>
+ <p>Activa ZAFRIK PREMIUM para seguir procesando imágenes sin límite.</p>
+ <a class="premiumBtn" href="https://wa.me/50688488952?text=Hola%20ZAFRIK%20Studio,%20ya%20utilicé%20mis%2010%20imágenes%20gratis%20y%20quiero%20activar%20PREMIUM" target="_blank" rel="noopener">QUIERO ZAFRIK PREMIUM</a>
+</div>
+
+<!-- PROGRESO -->
 
  <div
   class="progressWrap"
@@ -789,7 +795,7 @@ function renderUser(user){
     accountEmail.textContent = "Inicia sesión para usar ZAFRIK IA PRO";
     planBadge.textContent = "PRUEBA GRATIS · 10/10";
     planBadge.className = "planBadge";
-    premiumLock.classList.remove("show");
+    if (premiumLock) premiumLock.classList.remove("show");
     return;
   }
   authGate.style.display = "none";
@@ -798,11 +804,11 @@ function renderUser(user){
   if(user.premium){
     planBadge.textContent = "PREMIUM · ILIMITADO";
     planBadge.className = "planBadge premium";
-    premiumLock.classList.remove("show");
+    if (premiumLock) premiumLock.classList.remove("show");
   }else{
     planBadge.textContent = `PRUEBA GRATIS · ${user.remaining}/${user.limit} DISPONIBLES`;
     planBadge.className = "planBadge";
-    premiumLock.classList.toggle("show", Number(user.remaining) <= 0);
+    if (premiumLock) premiumLock.classList.toggle("show", Number(user.remaining) <= 0);
   }
 }
 
@@ -1065,7 +1071,7 @@ processBtn.addEventListener("click", async () => {
   }
 
   if (!currentUser.premium && Number(currentUser.remaining) <= 0) {
-    premiumLock.classList.add("show");
+    if (premiumLock) premiumLock.classList.add("show");
     showStatus("Has utilizado tus 10 imágenes gratuitas. Activa ZAFRIK PREMIUM para continuar.", "error");
     return;
   }
@@ -1119,7 +1125,7 @@ processBtn.addEventListener("click", async () => {
       }
       if (response.status === 402 || response.status === 403) {
         await loadAccount();
-        premiumLock.classList.add("show");
+        if (premiumLock) premiumLock.classList.add("show");
       }
       throw new Error(message);
     }
