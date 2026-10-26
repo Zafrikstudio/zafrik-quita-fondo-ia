@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V6.7 HD
+# ZAFRIK IA PRO V6.8 LIMPIEZA PRECISA
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.7.0",
+                "version": "6.8.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.7.0",
+                "version": "6.8.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "6.7.0"
+        "version": "6.8.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "6.7.0"
+        "version": "6.8.0"
     }
 
 
@@ -1180,6 +1180,14 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 # ============================================================
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
+    """
+    V6.8 LIMPIEZA PRECISA
+    - El fondo exterior se elimina por conectividad.
+    - Cada clic manual elimina solamente su isla conectada.
+    - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
+    - El umbral manual es más conservador que el de las esquinas.
+    - La máscara final protege aproximadamente 1 px del contorno del diseño.
+    """
     try:
         original = Image.open(io.BytesIO(data)).convert("RGBA")
     except Exception:
@@ -1187,63 +1195,125 @@ def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_po
 
     w, h = original.size
 
-    # Máscara en tamaño moderado para proteger memoria del servidor Free.
-    max_side = 1600
+    # Mantener memoria controlada en Render Free.
+    max_side = 1800
     ratio = min(1.0, max_side / max(w, h))
+
     if ratio < 1.0:
-        sw = max(1, int(w * ratio))
-        sh = max(1, int(h * ratio))
+        sw = max(1, int(round(w * ratio)))
+        sh = max(1, int(round(h * ratio)))
         work_rgba = original.resize((sw, sh), Image.Resampling.LANCZOS)
     else:
         work_rgba = original.copy()
         sw, sh = w, h
 
-    # Flood-fill compara el color de cada esquina con sus vecinos.
     work = work_rgba.convert("RGB")
     sentinel = (1, 2, 3)
 
-    # 0..100 -> umbral conservador. 10-25 recomendado.
     tol = max(0, min(100, int(tolerance)))
-    threshold = max(0, int(tol * 1.25))
 
-    # Primero elimina el fondo conectado a las esquinas.
-    for xy in ((0, 0), (sw - 1, 0), (0, sh - 1), (sw - 1, sh - 1)):
+    # Exterior: suficiente para fondos blancos/planos sin ser agresivo.
+    edge_threshold = max(2, int(tol * 0.90))
+
+    # Clic manual: MÁS preciso. Evita comerse líneas y colores claros del arte.
+    manual_threshold = max(2, int(tol * 0.58))
+
+    # 1) Fondo realmente conectado al exterior.
+    for xy in (
+        (0, 0),
+        (sw - 1, 0),
+        (0, sh - 1),
+        (sw - 1, sh - 1)
+    ):
         if work.getpixel(xy) != sentinel:
-            ImageDraw.floodfill(work, xy=xy, value=sentinel, thresh=threshold)
+            ImageDraw.floodfill(
+                work,
+                xy=xy,
+                value=sentinel,
+                thresh=edge_threshold
+            )
 
-    # Después elimina SOLO las zonas adicionales que el usuario haya marcado.
-    # Cada punto usa el color exacto de esa zona como referencia y no afecta
-    # otras áreas desconectadas del mismo color.
+    # Detecta si un clic está demasiado cerca de un contorno/detalle.
+    # En una zona de fondo uniforme los colores vecinos son muy parecidos.
+    def safe_manual_point(px, py):
+        seed = work.getpixel((px, py))
+        if seed == sentinel:
+            return False
+
+        radius = 3
+        x0 = max(0, px - radius)
+        x1 = min(sw - 1, px + radius)
+        y0 = max(0, py - radius)
+        y1 = min(sh - 1, py + radius)
+
+        max_delta = 0
+
+        for yy in range(y0, y1 + 1):
+            for xx in range(x0, x1 + 1):
+                c = work.getpixel((xx, yy))
+
+                if c == sentinel:
+                    continue
+
+                delta = max(
+                    abs(int(c[0]) - int(seed[0])),
+                    abs(int(c[1]) - int(seed[1])),
+                    abs(int(c[2]) - int(seed[2]))
+                )
+
+                if delta > max_delta:
+                    max_delta = delta
+
+                # Si hay un cambio fuerte tan cerca del clic, probablemente
+                # estamos sobre/bordeando una línea del diseño.
+                if max_delta > max(22, manual_threshold * 2):
+                    return False
+
+        return True
+
+    # 2) Islas interiores seleccionadas manualmente.
     for point in (manual_points or []):
         try:
             nx = max(0.0, min(1.0, float(point.get("x", 0))))
             ny = max(0.0, min(1.0, float(point.get("y", 0))))
+
             sx = min(sw - 1, max(0, round(nx * (sw - 1))))
             sy = min(sh - 1, max(0, round(ny * (sh - 1))))
-            if work.getpixel((sx, sy)) != sentinel:
-                ImageDraw.floodfill(
-                    work,
-                    xy=(sx, sy),
-                    value=sentinel,
-                    thresh=threshold
-                )
+
+            if not safe_manual_point(sx, sy):
+                continue
+
+            ImageDraw.floodfill(
+                work,
+                xy=(sx, sy),
+                value=sentinel,
+                thresh=manual_threshold
+            )
+
         except Exception:
             continue
 
-    # Negro = fondo conectado; blanco = diseño protegido.
+    # 3) Convertir resultado a máscara binaria.
     solid = Image.new("RGB", (sw, sh), sentinel)
     diff = ImageChops.difference(work, solid).convert("L")
     mask = diff.point(lambda p: 0 if p == 0 else 255)
 
-    # Suavizado mínimo para evitar borde dentado.
-    mask = mask.filter(ImageFilter.GaussianBlur(0.45))
+    # 4) Protección de contorno:
+    # MaxFilter expande mínimamente el diseño, evitando que la limpieza
+    # muerda líneas negras/colores en el borde.
+    if sw >= 3 and sh >= 3:
+        mask = mask.filter(ImageFilter.MaxFilter(3))
+
+    # Antialias MUY ligero: evita borde serruchado sin crear nube/halo grande.
+    mask = mask.filter(ImageFilter.GaussianBlur(0.22))
 
     if (sw, sh) != (w, h):
         mask = mask.resize((w, h), Image.Resampling.LANCZOS)
 
-    # Respetar cualquier transparencia que ya tuviera el archivo.
+    # Respetar transparencia preexistente.
     old_alpha = original.getchannel("A")
-    original.putalpha(ImageChops.multiply(old_alpha, mask))
+    final_alpha = ImageChops.multiply(old_alpha, mask)
+    original.putalpha(final_alpha)
 
     return original
 
@@ -1311,7 +1381,7 @@ async def process_image(
                 bg_tolerance,
                 selected_background_points
             )
-            background_engine = "EDGE-COLOR-PROTECT"
+            background_engine = "EDGE-PRECISE-V6.8"
         else:
             # Modo IA tradicional.
             transparent_data = remove_background(data)
@@ -1394,7 +1464,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "6.6.0",
+                "6.8.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1439,7 +1509,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "LANCZOS-STAGED-V5.6",
+                "ZAFRIK-HD-V6.8",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
