@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V6.7</title>
+<title>ZAFRIK | ZAFRIK IA PRO V6.7 HD</title>
 
 <style>
 *{box-sizing:border-box}
@@ -233,7 +233,7 @@ select{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V6.7
+  ZAFRIK IA PRO V6.7 HD
  </span>
 
  <h1>
@@ -430,6 +430,25 @@ select{
       LIMPIAR SELECCIÓN
      </button>
     </div>
+   </div>
+
+  </div>
+
+
+  <div class="control">
+
+   <div class="label">
+    <span>Mejora HD</span>
+    <span class="value" id="hdModeV">ILUSTRACIÓN / LOGO</span>
+   </div>
+
+   <div class="scale" id="hdModeButtons">
+    <button type="button" class="active" data-hd="ILUSTRACION">ILUSTRACIÓN / LOGO</button>
+    <button type="button" data-hd="FOTO">FOTOGRAFÍA</button>
+   </div>
+
+   <div style="font-size:11px;color:#687186;margin-top:8px;line-height:1.45">
+    Ilustración/Logo suaviza bordes pixelados antes de ampliar y recupera los contornos después.
    </div>
 
   </div>
@@ -806,6 +825,7 @@ let resultBlob = null;
 let resultURL = null;
 let beforeURL = null;
 let scale = 1;
+let hdMode = "ILUSTRACION";
 let mode = "DTF";
 let authMode = "register";
 let authToken = localStorage.getItem("zafrik_ia_token") || "";
@@ -1091,6 +1111,16 @@ document.querySelectorAll(".mode").forEach(button => {
   });
 });
 
+document.querySelectorAll("#hdModeButtons button").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll("#hdModeButtons button").forEach(x => x.classList.remove("active"));
+    button.classList.add("active");
+    hdMode = button.dataset.hd || "ILUSTRACION";
+    document.getElementById("hdModeV").textContent =
+      hdMode === "FOTO" ? "FOTOGRAFÍA" : "ILUSTRACIÓN / LOGO";
+  });
+});
+
 document.querySelectorAll(".scale button").forEach(button => {
   button.addEventListener("click", () => {
     document.querySelectorAll(".scale button").forEach(x => x.classList.remove("active"));
@@ -1199,6 +1229,7 @@ processBtn.addEventListener("click", async () => {
     fd.append("bg_tolerance", document.getElementById("bgTol").value);
     fd.append("edge_only", document.getElementById("edgeOnly").checked ? "true" : "false");
     fd.append("manual_points", JSON.stringify(backgroundPoints));
+    fd.append("hd_mode", hdMode);
 
     progress(20, "Enviando imagen al servidor...");
     showStatus("ZAFRIK IA PRO está procesando la imagen...");
@@ -1367,7 +1398,7 @@ loadAccount();
 
 <script>
 /* ==========================================================
-   ZAFRIK IA PRO V6.7
+   ZAFRIK IA PRO V6.7 HD
    ALTURA AUTOMÁTICA PARA IFRAME DE HOSTINGER
 ========================================================== */
 (function(){
