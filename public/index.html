@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V6.5</title>
+<title>ZAFRIK | ZAFRIK IA PRO V6.6</title>
 
 <style>
 *{box-sizing:border-box}
@@ -132,6 +132,11 @@ select{
  background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0;
 }
 .viewer img{display:block;max-width:100%;max-height:600px;object-fit:contain}
+.pickMarker{
+ position:absolute;width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%);
+ border:3px solid #fff;background:#ff2d77;box-shadow:0 0 0 2px #5b43ff,0 3px 10px rgba(0,0,0,.35);
+ z-index:5;pointer-events:none
+}
 .tag{
  position:absolute;left:10px;top:10px;z-index:3;background:rgba(12,14,25,.86);color:#fff;
  border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:20px;font-size:11px;font-weight:900
@@ -228,7 +233,7 @@ select{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V6.5
+  ZAFRIK IA PRO V6.6
  </span>
 
  <h1>
@@ -409,6 +414,22 @@ select{
 
    <div style="font-size:11px;color:#687186;margin-top:8px;line-height:1.45">
     Recomendado: 10–25%. Si borra parte del diseño, baja la tolerancia.
+   </div>
+
+   <div style="margin-top:12px;padding:11px;border:1px solid #dfe3ec;border-radius:12px;background:#fff">
+    <label style="display:flex;gap:9px;align-items:flex-start;font-size:12px;font-weight:900;cursor:pointer">
+     <input id="pickBg" type="checkbox" style="width:auto;margin-top:2px">
+     <span>🎯 Seleccionar fondo manualmente</span>
+    </label>
+    <div style="font-size:11px;color:#687186;margin-top:6px;line-height:1.45">
+     Actívalo y haz clic en las zonas de fondo que todavía quieres borrar. No selecciones partes del diseño.
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap">
+     <strong id="pickCount" style="font-size:11px">0 zonas seleccionadas</strong>
+     <button type="button" id="clearPicks" style="border:1px solid #d8deea;background:#f5f7fb;border-radius:9px;padding:7px 10px;font-size:10px;font-weight:900;cursor:pointer">
+      LIMPIAR SELECCIÓN
+     </button>
+    </div>
    </div>
 
   </div>
@@ -789,6 +810,7 @@ let mode = "DTF";
 let authMode = "register";
 let authToken = localStorage.getItem("zafrik_ia_token") || "";
 let currentUser = null;
+let backgroundPoints = [];
 
 const authGate = document.getElementById("authGate");
 const authForm = document.getElementById("authForm");
@@ -802,6 +824,9 @@ const planBadge = document.getElementById("planBadge");
 const accountEmail = document.getElementById("accountEmail");
 const logoutBtn = document.getElementById("logoutBtn");
 const premiumLock = document.getElementById("premiumLock");
+const pickBg = document.getElementById("pickBg");
+const pickCount = document.getElementById("pickCount");
+const clearPicks = document.getElementById("clearPicks");
 
 function setAuthMode(name){
   authMode = name;
@@ -933,6 +958,48 @@ function getImageInfo(f) {
   });
 }
 
+function updatePickCount(){
+  if(pickCount) pickCount.textContent =
+    `${backgroundPoints.length} zona${backgroundPoints.length===1?"":"s"} seleccionada${backgroundPoints.length===1?"":"s"}`;
+}
+
+function clearBackgroundPicks(){
+  backgroundPoints = [];
+  document.querySelectorAll(".pickMarker").forEach(x=>x.remove());
+  updatePickCount();
+}
+
+function addPickMarker(clientX, clientY){
+  const viewer = before.closest(".viewer");
+  const vr = viewer.getBoundingClientRect();
+  const marker = document.createElement("span");
+  marker.className = "pickMarker";
+  marker.style.left = (clientX - vr.left) + "px";
+  marker.style.top = (clientY - vr.top) + "px";
+  viewer.appendChild(marker);
+}
+
+before.addEventListener("click", e => {
+  if(!pickBg || !pickBg.checked || !selectedFile || before.hidden) return;
+
+  const r = before.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width;
+  const y = (e.clientY - r.top) / r.height;
+
+  if(x < 0 || x > 1 || y < 0 || y > 1) return;
+  if(backgroundPoints.length >= 20){
+    showStatus("Máximo 20 zonas de fondo por procesamiento.", "error");
+    return;
+  }
+
+  backgroundPoints.push({x:Number(x.toFixed(6)), y:Number(y.toFixed(6))});
+  addPickMarker(e.clientX, e.clientY);
+  updatePickCount();
+  showStatus("Zona de fondo marcada. Puedes seleccionar otras zonas y luego procesar.", "good");
+});
+
+if(clearPicks) clearPicks.addEventListener("click", clearBackgroundPicks);
+
 async function loadFile(f) {
   if (!f) return;
 
@@ -949,6 +1016,7 @@ async function loadFile(f) {
   }
 
   selectedFile = f;
+  clearBackgroundPicks();
   resultBlob = null;
   downloadBtn.disabled = true;
 
@@ -1130,6 +1198,7 @@ processBtn.addEventListener("click", async () => {
     fd.append("mode", mode);
     fd.append("bg_tolerance", document.getElementById("bgTol").value);
     fd.append("edge_only", document.getElementById("edgeOnly").checked ? "true" : "false");
+    fd.append("manual_points", JSON.stringify(backgroundPoints));
 
     progress(20, "Enviando imagen al servidor...");
     showStatus("ZAFRIK IA PRO está procesando la imagen...");
@@ -1229,7 +1298,8 @@ processBtn.addEventListener("click", async () => {
         : `<b>${dpi} DPI</b>`;
 
     analysisMessage.innerHTML =
-      `Fondo eliminado con IA ✓ · Transparencia real ✓ · ` +
+      `${backgroundPoints.length ? "Fondo seleccionado manualmente ✓ · " : "Fondo eliminado ✓ · "}` +
+      `Protección interior ✓ · Transparencia real ✓ · ` +
       `Modo <b>${mode}</b> · Escala aplicada <b>${realScale}X</b> · ` +
       dpiInfo + `.`;
 
