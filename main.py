@@ -17,14 +17,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V6.3
+# ZAFRIK IA PRO V6.4
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="6.3.0",
+    version="6.4.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -507,39 +507,87 @@ def admin_reset_uses(
 @app.post("/api/admin/user/active")
 def admin_set_active(
     email: str = Form(...),
-    active: bool = Form(...),
+    active: str = Form(...),
     x_admin_secret: str | None = Header(default=None)
 ):
     require_admin(x_admin_secret)
     email = clean_email(email)
 
-    con = db_connect()
+    value = str(active or "").strip().lower()
+    if value not in ("true","false","1","0","yes","no","on","off"):
+        raise HTTPException(status_code=400, detail="Valor active inválido.")
 
+    is_active = value in ("true","1","yes","on")
+
+    con = db_connect()
     try:
         cur = con.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
             UPDATE zafrik_ia_users
             SET is_active=%s, updated_at=NOW()
             WHERE email=%s
-            RETURNING id,email,plan,free_limit,used_count,is_active,created_at,updated_at,premium_started_at,premium_expires_at
-        """, (active, email))
+            RETURNING id,email,plan,free_limit,used_count,is_active,
+                      created_at,updated_at,premium_started_at,premium_expires_at
+        """, (is_active, email))
         row = cur.fetchone()
 
         if not row:
             con.rollback()
-            raise HTTPException(
-                status_code=404,
-                detail="Usuario no encontrado."
-            )
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+        # Al bloquear, cerrar todas las sesiones activas inmediatamente.
+        if not is_active:
+            cur.execute("DELETE FROM zafrik_ia_sessions WHERE user_id=%s", (row["id"],))
 
         con.commit()
 
         return {
             "ok": True,
-            "message": "Cuenta desbloqueada." if active else "Cuenta bloqueada.",
+            "message": "Cuenta desbloqueada." if is_active else "Cuenta bloqueada y sesiones cerradas.",
             "user": user_public(row)
         }
+    finally:
+        con.close()
 
+
+@app.post("/api/admin/user/delete")
+def admin_delete_user(
+    email: str = Form(...),
+    confirm_email: str = Form(...),
+    x_admin_secret: str | None = Header(default=None)
+):
+    require_admin(x_admin_secret)
+
+    email = clean_email(email)
+    confirm_email = clean_email(confirm_email)
+
+    if not email or email != confirm_email:
+        raise HTTPException(
+            status_code=400,
+            detail="La confirmación del correo no coincide."
+        )
+
+    con = db_connect()
+    try:
+        cur = con.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            DELETE FROM zafrik_ia_users
+            WHERE email=%s
+            RETURNING id,email
+        """, (email,))
+        row = cur.fetchone()
+
+        if not row:
+            con.rollback()
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+        # sessions y usage se borran por ON DELETE CASCADE.
+        con.commit()
+
+        return {
+            "ok": True,
+            "message": f"Usuario {row['email']} eliminado permanentemente."
+        }
     finally:
         con.close()
 
@@ -597,7 +645,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.3.0",
+                "version": "6.4.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -633,7 +681,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.3.0",
+                "version": "6.4.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -655,7 +703,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "6.3.0"
+        "version": "6.4.0"
     }
 
 
@@ -675,7 +723,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "6.3.0"
+        "version": "6.4.0"
     }
 
 
