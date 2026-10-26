@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V7.3</title>
+<title>ZAFRIK | ZAFRIK IA PRO V7.4</title>
 
 <style>
 *{box-sizing:border-box}
@@ -246,7 +246,7 @@ body > *:last-child{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V7.3
+  ZAFRIK IA PRO V7.4
  </span>
 
  <h1>
@@ -1133,11 +1133,11 @@ document.querySelectorAll("#hdModeButtons button").forEach(button => {
   });
 });
 
-document.querySelectorAll(".scale button").forEach(button => {
+document.querySelectorAll('.scale button[data-scale]').forEach(button => {
   button.addEventListener("click", () => {
-    document.querySelectorAll(".scale button").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll('.scale button[data-scale]').forEach(x => x.classList.remove("active"));
     button.classList.add("active");
-    scale = Number(button.dataset.scale);
+    scale = Number(button.dataset.scale || 1);
     document.getElementById("scaleV").textContent = scale + "X";
   });
 });
@@ -1145,11 +1145,12 @@ document.querySelectorAll(".scale button").forEach(button => {
 [
   ["precision", "precisionV", "%"],
   ["halo", "haloV", "%"],
-  ["edge", "edgeV", ""],
   ["sharp", "sharpV", "%"]
 ].forEach(item => {
   const input = document.getElementById(item[0]);
   const output = document.getElementById(item[1]);
+
+  if(!input || !output) return;
 
   input.addEventListener("input", () => {
     output.textContent = input.value + item[2];
@@ -1413,7 +1414,7 @@ loadAccount();
 
 <script>
 /* ==========================================================
-   ZAFRIK IA PRO V7.3
+   ZAFRIK IA PRO V7.4
    ALTURA AUTOMÁTICA PARA IFRAME DE HOSTINGER
 ========================================================== */
 (function(){
