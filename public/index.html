@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V6.0</title>
+<title>ZAFRIK | ZAFRIK IA PRO V6.5</title>
 
 <style>
 *{box-sizing:border-box}
@@ -228,7 +228,7 @@ select{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V6.0
+  ZAFRIK IA PRO V6.5
  </span>
 
  <h1>
@@ -383,6 +383,33 @@ select{
     max="10"
     value="0"
    >
+
+  </div>
+
+
+  <div class="control">
+
+   <div class="label">
+    <span>Tolerancia precisa de fondo</span>
+    <span class="value" id="bgTolV">18%</span>
+   </div>
+
+   <input
+    id="bgTol"
+    type="range"
+    min="0"
+    max="100"
+    value="18"
+   >
+
+   <label style="display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:12px;font-weight:800;line-height:1.4;cursor:pointer">
+    <input id="edgeOnly" type="checkbox" checked style="width:auto;margin-top:2px">
+    <span>Proteger interior del diseño — borrar únicamente el fondo conectado a los bordes</span>
+   </label>
+
+   <div style="font-size:11px;color:#687186;margin-top:8px;line-height:1.45">
+    Recomendado: 10–25%. Si borra parte del diseño, baja la tolerancia.
+   </div>
 
   </div>
 
@@ -1063,6 +1090,10 @@ async function readServerError(response) {
   return `No fue posible procesar la imagen. Error ${response.status}.`;
 }
 
+document.getElementById("bgTol").addEventListener("input", e => {
+  document.getElementById("bgTolV").textContent = e.target.value + "%";
+});
+
 processBtn.addEventListener("click", async () => {
   if (!authToken || !currentUser) {
     showStatus("Debes crear una cuenta o iniciar sesión para procesar imágenes.", "error");
@@ -1097,6 +1128,8 @@ processBtn.addEventListener("click", async () => {
     fd.append("scale", String(scale));
     fd.append("sharpness", document.getElementById("sharp").value);
     fd.append("mode", mode);
+    fd.append("bg_tolerance", document.getElementById("bgTol").value);
+    fd.append("edge_only", document.getElementById("edgeOnly").checked ? "true" : "false");
 
     progress(20, "Enviando imagen al servidor...");
     showStatus("ZAFRIK IA PRO está procesando la imagen...");
