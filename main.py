@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V6.9 BORDE REAL
+# ZAFRIK IA PRO V7.0 BORDE LIMPIO
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.9.0",
+                "version": "7.0.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.9.0",
+                "version": "7.0.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "6.9.0"
+        "version": "7.0.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "6.9.0"
+        "version": "7.0.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V6.9 BORDE REAL
+    V7.0 BORDE LIMPIO
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1313,6 +1313,54 @@ def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_po
 
     return original
 
+def decontaminate_light_edge(image: Image.Image, strength: int = 40):
+    """
+    V7.0: reduce contaminación blanca/gris del fondo en píxeles
+    semitransparentes del contorno sin modificar el interior opaco.
+    No inventa detalle: corrige el color visible del borde.
+    """
+    rgba = image.convert("RGBA")
+    if strength <= 0:
+        return rgba
+
+    strength = max(0, min(100, int(strength)))
+    r, g, b, a = rgba.split()
+
+    # Trabajar solo en el borde semitransparente.
+    # Más fuerza = mayor rango de alfa afectado.
+    alpha_limit = 210 + int(strength * 0.35)
+    alpha_limit = min(245, alpha_limit)
+
+    px = rgba.load()
+    w, h = rgba.size
+
+    # Mantener coste controlado. Solo cambia píxeles semitransparentes claros.
+    factor = 0.20 + (strength / 100.0) * 0.55
+
+    for y in range(h):
+        for x in range(w):
+            rr, gg, bb, aa = px[x, y]
+            if aa == 0 or aa >= alpha_limit:
+                continue
+
+            # Detectar contaminación clara/neutra típica de fondo blanco.
+            mx = max(rr, gg, bb)
+            mn = min(rr, gg, bb)
+            neutral = (mx - mn) <= 38
+            light = (rr + gg + bb) / 3.0 >= 175
+
+            if neutral and light:
+                # Oscurecimiento proporcional a transparencia y fuerza.
+                edge_amount = (1.0 - aa / 255.0) * factor
+                target = min(rr, gg, bb)
+                rr = int(rr * (1-edge_amount) + target * edge_amount)
+                gg = int(gg * (1-edge_amount) + target * edge_amount)
+                bb = int(bb * (1-edge_amount) + target * edge_amount)
+                px[x, y] = (rr, gg, bb, aa)
+
+    return rgba
+
+
 def refine_alpha_edge(image: Image.Image, precision: int = 90, halo: int = 70, edge_adjust: int = 0):
     """
     V6.9: controles REALES de borde.
@@ -1358,6 +1406,43 @@ def refine_alpha_edge(image: Image.Image, precision: int = 90, halo: int = 70, e
     return rgba
 
 
+def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False):
+    """
+    Elimina únicamente sombras grises claras conectadas al borde inferior.
+    Es conservador para no borrar zapatos/arte oscuro.
+    """
+    if not enabled:
+        return image.convert("RGBA")
+
+    rgba = image.convert("RGBA")
+    w, h = rgba.size
+    px = rgba.load()
+
+    # Solo revisar franja inferior 22%.
+    y0 = int(h * 0.78)
+    mask = Image.new("L", (w, h), 0)
+    mp = mask.load()
+
+    for y in range(y0, h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            mx, mn = max(r,g,b), min(r,g,b)
+            avg = (r+g+b)/3
+            # sombra gris clara/neutra, no color del dibujo
+            if (mx-mn) <= 28 and 120 <= avg <= 245:
+                mp[x,y] = 255
+
+    # Suavizar apenas y restar alfa en candidatos.
+    mask = mask.filter(ImageFilter.GaussianBlur(0.45))
+    alpha = rgba.getchannel("A")
+    inv = ImageChops.invert(mask)
+    alpha = ImageChops.multiply(alpha, inv)
+    rgba.putalpha(alpha)
+    return rgba
+
+
 # ============================================================
 # PROCESAMIENTO PRINCIPAL
 # ============================================================
@@ -1386,6 +1471,8 @@ async def process_image(
     halo: int = Form(70),
 
     edge_adjust: int = Form(0),
+
+    remove_shadow: bool = Form(False),
 
     authorization: str | None = Header(default=None)
 
@@ -1460,6 +1547,19 @@ async def process_image(
             edge_adjust
         )
 
+        # Quitar contaminación blanca del borde usando el mismo
+        # control "Eliminar halo".
+        result = decontaminate_light_edge(
+            result,
+            halo
+        )
+
+        # Opción independiente para sombras grises del suelo.
+        result = remove_ground_shadow_precise(
+            result,
+            remove_shadow
+        )
+
 
         # ====================================================
         # 5. MEJORA
@@ -1523,7 +1623,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "6.9.0",
+                "7.0.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1561,6 +1661,9 @@ async def process_image(
                 "X-Edge-Adjust":
                 str(edge_adjust),
 
+                "X-Remove-Shadow":
+                "true" if remove_shadow else "false",
+
                 "X-DPI":
                 "300",
 
@@ -1577,7 +1680,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V6.9",
+                "ZAFRIK-HD-V7.0",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
@@ -1663,6 +1766,7 @@ async def process_legacy(
         precision=90,
         halo=70,
         edge_adjust=0,
+        remove_shadow=False,
         authorization=authorization
     )
 
