@@ -11,14 +11,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V5.4
+# ZAFRIK IA PRO V5.5
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="5.4.0",
+    version="5.5.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -78,7 +78,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "5.4.0",
+                "version": "5.5.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -100,7 +100,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "5.4.0"
+        "version": "5.5.0"
     }
 
 
@@ -117,7 +117,7 @@ def api_status():
         "ok": True,
         "server": "online",
         "remove_bg_configured": bool(api_key),
-        "version": "5.4.0"
+        "version": "5.5.0"
     }
 
 
@@ -669,7 +669,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "5.4.0",
+                "5.5.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -690,7 +690,19 @@ async def process_image(
                 str(mode),
 
                 "X-DPI":
-                "300"
+                "300",
+
+                "X-DPI-Verified":
+                "true",
+
+                "X-PNG-pHYs":
+                "verified",
+
+                "X-Pixels-Per-Meter-X":
+                "11811",
+
+                "X-Pixels-Per-Meter-Y":
+                "11811"
             }
         )
 
