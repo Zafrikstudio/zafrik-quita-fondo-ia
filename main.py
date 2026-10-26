@@ -1,5 +1,6 @@
 import os
 import io
+import json
 import struct
 import zlib
 import secrets
@@ -17,14 +18,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V6.5.1
+# ZAFRIK IA PRO V6.6
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="6.5.1",
+    version="6.6.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -645,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.5.1",
+                "version": "6.6.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -681,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.5.1",
+                "version": "6.6.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -703,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "6.5.1"
+        "version": "6.6.0"
     }
 
 
@@ -723,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "6.5.1"
+        "version": "6.6.0"
     }
 
 
@@ -1158,7 +1159,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 # Protege colores iguales que estén encerrados dentro del diseño.
 # ============================================================
 
-def remove_edge_connected_background(data: bytes, tolerance: int = 18):
+def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     try:
         original = Image.open(io.BytesIO(data)).convert("RGBA")
     except Exception:
@@ -1185,10 +1186,29 @@ def remove_edge_connected_background(data: bytes, tolerance: int = 18):
     tol = max(0, min(100, int(tolerance)))
     threshold = max(0, int(tol * 1.25))
 
+    # Primero elimina el fondo conectado a las esquinas.
     for xy in ((0, 0), (sw - 1, 0), (0, sh - 1), (sw - 1, sh - 1)):
-        # Si una esquina ya fue marcada por otra inundación, no repetir.
         if work.getpixel(xy) != sentinel:
             ImageDraw.floodfill(work, xy=xy, value=sentinel, thresh=threshold)
+
+    # Después elimina SOLO las zonas adicionales que el usuario haya marcado.
+    # Cada punto usa el color exacto de esa zona como referencia y no afecta
+    # otras áreas desconectadas del mismo color.
+    for point in (manual_points or []):
+        try:
+            nx = max(0.0, min(1.0, float(point.get("x", 0))))
+            ny = max(0.0, min(1.0, float(point.get("y", 0))))
+            sx = min(sw - 1, max(0, round(nx * (sw - 1))))
+            sy = min(sh - 1, max(0, round(ny * (sh - 1))))
+            if work.getpixel((sx, sy)) != sentinel:
+                ImageDraw.floodfill(
+                    work,
+                    xy=(sx, sy),
+                    value=sentinel,
+                    thresh=threshold
+                )
+        except Exception:
+            continue
 
     # Negro = fondo conectado; blanco = diseño protegido.
     solid = Image.new("RGB", (sw, sh), sentinel)
@@ -1226,6 +1246,8 @@ async def process_image(
 
     edge_only: bool = Form(False),
 
+    manual_points: str = Form("[]"),
+
     authorization: str | None = Header(default=None)
 
 ):
@@ -1246,6 +1268,14 @@ async def process_image(
             validate_image(data)
         )
 
+        try:
+            selected_background_points = json.loads(manual_points or "[]")
+            if not isinstance(selected_background_points, list):
+                selected_background_points = []
+            selected_background_points = selected_background_points[:20]
+        except Exception:
+            selected_background_points = []
+
 
         # ====================================================
         # 2. ELIMINAR FONDO
@@ -1256,7 +1286,8 @@ async def process_image(
             # Los colores iguales dentro del diseño quedan protegidos.
             result = remove_edge_connected_background(
                 data,
-                bg_tolerance
+                bg_tolerance,
+                selected_background_points
             )
             background_engine = "EDGE-COLOR-PROTECT"
         else:
@@ -1340,7 +1371,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "6.5.1",
+                "6.6.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1466,6 +1497,7 @@ async def process_legacy(
         mode=mode,
         bg_tolerance=18,
         edge_only=False,
+        manual_points="[]",
         authorization=authorization
     )
 
