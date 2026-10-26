@@ -10,21 +10,21 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 import requests
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageDraw, ImageChops, ImageFilter
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V6.5
+# ZAFRIK IA PRO V6.5.1
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="6.5.0",
+    version="6.5.1",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -645,7 +645,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.5.0",
+                "version": "6.5.1",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -681,7 +681,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "6.5.0",
+                "version": "6.5.1",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -703,7 +703,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "6.5.0"
+        "version": "6.5.1"
     }
 
 
@@ -723,7 +723,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "6.5.0"
+        "version": "6.5.1"
     }
 
 
@@ -1340,7 +1340,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "6.5.0",
+                "6.5.1",
 
                 "X-Original-Width":
                 str(original_width),
