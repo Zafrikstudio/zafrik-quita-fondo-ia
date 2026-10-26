@@ -23,7 +23,7 @@ body{
 }
 button,input,select{font:inherit}
 button{transition:.2s}
-.app{width:min(1180px,calc(100% - 24px));margin:18px auto 34px}
+.app{width:min(1180px,calc(100% - 24px));margin:10px auto 24px}
 
 /* HERO */
 .hero{
@@ -32,8 +32,8 @@ button{transition:.2s}
   radial-gradient(circle at 7% 8%,rgba(56,130,255,.17),transparent 30%),
   linear-gradient(135deg,#f7fbff 0%,#fff 48%,#fff5fa 100%);
  border:1px solid var(--line);
- border-radius:26px;
- padding:34px;
+ border-radius:24px;
+ padding:26px 32px;
  box-shadow:0 16px 45px rgba(31,45,86,.08);
 }
 .badge{
@@ -42,17 +42,17 @@ button{transition:.2s}
  background:linear-gradient(90deg,#376dff,#7c45ff,#ff2b78);
  box-shadow:0 8px 22px rgba(116,73,255,.20);
 }
-h1{margin:16px 0 10px;font-size:48px;line-height:1.02;letter-spacing:-1.5px}
+h1{margin:12px 0 7px;font-size:46px;line-height:1.02;letter-spacing:-1.5px}
 .grad{
  background:linear-gradient(90deg,#3568ff,#7548ff,#f13283,#ff7a32);
  -webkit-background-clip:text;background-clip:text;color:transparent;
 }
-.sub{color:#596174;max-width:800px;line-height:1.65;margin-bottom:0}
+.sub{color:#596174;max-width:850px;line-height:1.5;margin:0}
 
 /* UPLOAD */
 .upload{
- margin-top:25px;width:100%;min-height:150px;border:2px dashed #aeb8d3;
- padding:28px 20px;border-radius:20px;text-align:center;cursor:pointer;
+ margin-top:18px;width:100%;min-height:118px;border:2px dashed #aeb8d3;
+ padding:20px;border-radius:18px;text-align:center;cursor:pointer;
  background:rgba(255,255,255,.86);transition:.2s;
  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
  box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);
@@ -60,22 +60,22 @@ h1{margin:16px 0 10px;font-size:48px;line-height:1.02;letter-spacing:-1.5px}
 .upload:hover,.upload.drag{
  border-color:#6b55ff;background:#f8f6ff;transform:translateY(-1px);
 }
-.upload strong{display:block;width:100%;font-size:20px;line-height:1.3;color:#15182a;font-weight:900}
+.upload strong{display:block;width:100%;font-size:18px;line-height:1.25;color:#15182a;font-weight:900}
 .upload span{display:block;width:100%;color:#747b8c;font-size:14px;line-height:1.4}
 input[type=file]{display:none}
 
 /* PANELS */
 .panel{
- margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:22px;
- padding:22px;box-shadow:0 12px 36px rgba(29,42,78,.07);
+ margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:20px;
+ padding:18px 20px;box-shadow:0 12px 36px rgba(29,42,78,.07);
 }
-.sectionTitle{font-weight:900;font-size:15px;margin-bottom:14px;color:#16192a}
+.sectionTitle{font-weight:900;font-size:14px;margin-bottom:11px;color:#16192a}
 .small{color:var(--muted);font-size:12px;line-height:1.5}
 
 /* MODES */
 .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .mode{
- border:1px solid #d9deea;background:#f8f9fc;color:#50586c;padding:15px;
+ border:1px solid #d9deea;background:#f8f9fc;color:#50586c;padding:13px;
  border-radius:13px;cursor:pointer;font-weight:900;
 }
 .mode:hover{border-color:#9a8cff;background:#faf9ff}
@@ -86,9 +86,9 @@ input[type=file]{display:none}
 }
 
 /* CONTROLS */
-.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:13px}
 .control,.selectBox{
- background:#f8f9fc;border:1px solid #e2e6ef;border-radius:15px;padding:15px;
+ background:#f8f9fc;border:1px solid #e2e6ef;border-radius:14px;padding:13px;
 }
 .label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;font-weight:900;margin-bottom:11px}
 .value{color:#6e48f5}
@@ -101,7 +101,7 @@ input[type=range]{width:100%;accent-color:#7549ff;cursor:pointer}
  color:#fff;background:linear-gradient(135deg,#396cff,#7b46ff);border-color:transparent;
  box-shadow:0 5px 15px rgba(86,79,238,.18)
 }
-.dtfOptions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.dtfOptions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 .selectBox label{display:block;font-size:12px;font-weight:900;margin-bottom:10px}
 select{
  width:100%;border:1px solid #d7dce8;background:#fff;color:#22263a;border-radius:10px;padding:11px;outline:none
@@ -126,7 +126,7 @@ select{
 .bg-white{background:#fff}.bg-black{background:#000}.bg-pink{background:#ff2b69}
 .preview{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 .viewer{
- min-height:430px;border:1px solid #dfe3ec;border-radius:17px;overflow:hidden;position:relative;
+ min-height:380px;border:1px solid #dfe3ec;border-radius:17px;overflow:hidden;position:relative;
  display:flex;align-items:center;justify-content:center;background-color:#111;
  background-image:linear-gradient(45deg,#222 25%,transparent 25%),linear-gradient(-45deg,#222 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#222 75%),linear-gradient(-45deg,transparent 75%,#222 75%);
  background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0;
@@ -139,16 +139,16 @@ select{
 .empty{color:#aaa5bd;text-align:center;padding:20px}
 
 /* ACTIONS */
-.actions{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:16px}
+.actions{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:12px}
 .process{
- border:0;padding:17px;border-radius:14px;font-size:15px;font-weight:900;cursor:pointer;color:#fff;
+ border:0;padding:15px;border-radius:14px;font-size:15px;font-weight:900;cursor:pointer;color:#fff;
  background:linear-gradient(90deg,#2d72ff,#7648ff,#ff2d77,#ff7838);
  box-shadow:0 9px 24px rgba(107,72,255,.20)
 }
 .process:hover{transform:translateY(-1px);filter:brightness(1.04)}
 .process:disabled{opacity:.6;cursor:wait;transform:none}
 .download{
- border:1px solid #d6dce9;padding:17px;border-radius:14px;font-weight:900;cursor:pointer;
+ border:1px solid #d6dce9;padding:15px;border-radius:14px;font-weight:900;cursor:pointer;
  color:#1a1e31;background:#fff;box-shadow:0 5px 16px rgba(28,39,73,.06)
 }
 .download:hover:not(:disabled){border-color:#7a60ff;background:#faf9ff}
@@ -181,8 +181,8 @@ select{
 /* RESPONSIVE */
 @media(max-width:800px){
  .app{width:min(100% - 14px,1180px);margin-top:8px}
- .hero{padding:22px}
- h1{font-size:37px}
+ .hero{padding:18px}
+ h1{font-size:36px}
  .controls,.dtfOptions,.preview{grid-template-columns:1fr}
  .modes{grid-template-columns:1fr}
  .actions{grid-template-columns:1fr}
