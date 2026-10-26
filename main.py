@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V7.2 SELECCION RESTAURADA
+# ZAFRIK IA PRO V7.5 BORDE BLANCO LIMPIO
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.2.0",
+                "version": "7.5.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.2.0",
+                "version": "7.5.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "7.2.0"
+        "version": "7.5.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "7.2.0"
+        "version": "7.5.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V7.2 SELECCION RESTAURADA
+    V7.5 BORDE BLANCO LIMPIO
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1393,6 +1393,66 @@ def refine_alpha_edge(image: Image.Image, precision: int = 90, halo: int = 70):
     return rgba
 
 
+
+def clean_connected_white_fringe(image: Image.Image, strength: int = 55) -> Image.Image:
+    """
+    Limpia el borde blanco/gris que queda después de quitar un fondo claro.
+    Solo trabaja en píxeles del CONTORNO de la máscara alfa; no toca blancos
+    interiores completamente opacos como guantes, ojos o luna.
+    """
+    img = image.convert("RGBA")
+    r, g, b, a = img.split()
+
+    try:
+        strength = max(0, min(100, int(strength)))
+    except Exception:
+        strength = 55
+
+    if strength <= 0:
+        return img
+
+    # Banda interior muy estrecha junto a transparencia.
+    # Dilatamos transparencia hacia dentro 1 px para identificar solo el contorno.
+    transparent = a.point(lambda p: 255 if p <= 8 else 0)
+    near_outside = transparent.filter(ImageFilter.MaxFilter(3))
+
+    # No modificar fondo ya transparente.
+    visible = a.point(lambda p: 255 if p > 8 else 0)
+    edge_band = ImageChops.multiply(near_outside, visible)
+
+    # Detectar contaminación clara/neutra (blanco/gris), no colores saturados.
+    # minRGB alto = claro; diferencia RGB baja = neutral.
+    rgb = Image.merge("RGB", (r, g, b))
+    px = rgb.load()
+    em = edge_band.load()
+    alpha = a.load()
+    w, h = img.size
+
+    # Trabajamos únicamente sobre la banda de 1 px; reduce costo y protege arte.
+    out = img.load()
+    cutoff = int(228 - (strength * 0.48))   # 228 -> 180 aprox.
+    neutral_limit = int(18 + strength * 0.22)
+
+    for y in range(h):
+        for x in range(w):
+            if em[x, y] == 0:
+                continue
+
+            rr, gg, bb, aa = out[x, y]
+            mx = max(rr, gg, bb)
+            mn = min(rr, gg, bb)
+
+            if mn >= cutoff and (mx - mn) <= neutral_limit:
+                # Blanco/gris exterior: volverlo transparente.
+                out[x, y] = (rr, gg, bb, 0)
+            elif aa < 245 and mn >= max(150, cutoff - 25) and (mx - mn) <= neutral_limit + 12:
+                # Antialias claro: reducir alfa progresivamente.
+                whiteness = (mn - max(150, cutoff - 25)) / max(1, 255 - max(150, cutoff - 25))
+                reduce = int(aa * whiteness * (0.35 + 0.45 * strength / 100))
+                out[x, y] = (rr, gg, bb, max(0, aa - reduce))
+
+    return img
+
 def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False):
     """
     Elimina únicamente sombras grises claras conectadas al borde inferior.
@@ -1538,7 +1598,10 @@ async def process_image(
             halo
         )
 
-        # Opción independiente para sombras grises del suelo.
+        
+        # V7.5: limpieza de borde blanco conectado al exterior.
+        result = clean_connected_white_fringe(result, halo)
+# Opción independiente para sombras grises del suelo.
         result = remove_ground_shadow_precise(
             result,
             remove_shadow
@@ -1607,7 +1670,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "7.2.0",
+                "7.5.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1661,7 +1724,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V7.2",
+                "ZAFRIK-HD-V7.5",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
