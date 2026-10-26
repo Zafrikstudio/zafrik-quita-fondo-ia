@@ -11,14 +11,14 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V5.5
+# ZAFRIK IA PRO V5.6
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
 
 app = FastAPI(
     title="ZAFRIK IA PRO",
-    version="5.5.0",
+    version="5.6.0",
     description=(
         "Eliminación de fondo y preparación de imágenes "
         "para DTF, DTG y sublimación."
@@ -78,7 +78,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "5.5.0",
+                "version": "5.6.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -100,7 +100,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "5.5.0"
+        "version": "5.6.0"
     }
 
 
@@ -117,7 +117,7 @@ def api_status():
         "ok": True,
         "server": "online",
         "remove_bg_configured": bool(api_key),
-        "version": "5.5.0"
+        "version": "5.6.0"
     }
 
 
@@ -353,76 +353,75 @@ def enhance_image(
 # ESCALADO SEGURO
 # ============================================================
 
-def resize_safe(
-    image: Image.Image,
-    scale: int
-):
+def resize_safe(image: Image.Image, scale: int):
+    """
+    V5.6 - Escalado mejorado para impresión.
 
-    try:
+    - Mantiene transparencia RGBA.
+    - Usa LANCZOS por etapas para 2X/3X/4X.
+    - Aplica nitidez moderada después de cada etapa para reducir
+      la apariencia borrosa sin crear halos fuertes.
+    - Respeta MAX_OUTPUT_PIXELS para Render Free.
+    """
 
-        scale = int(scale)
+    scale = int(scale)
 
-    except Exception:
-
-        scale = 1
-
-    if scale not in (
-        1,
-        2,
-        3,
-        4
-    ):
-
+    if scale not in [1, 2, 3, 4]:
         scale = 1
 
     width, height = image.size
 
-    new_width = width * scale
-    new_height = height * scale
+    if scale == 1:
+        return image, 1.0
 
-    output_pixels = (
-        new_width *
-        new_height
-    )
+    requested_width = width * scale
+    requested_height = height * scale
+    requested_pixels = requested_width * requested_height
 
-    # Reducir automáticamente la escala
-    # si la salida sería demasiado grande.
-    while (
-        output_pixels > MAX_OUTPUT_PIXELS
-        and
-        scale > 1
-    ):
+    real_scale = float(scale)
 
-        scale -= 1
+    if requested_pixels > MAX_OUTPUT_PIXELS:
+        real_scale = (
+            MAX_OUTPUT_PIXELS /
+            float(width * height)
+        ) ** 0.5
 
-        new_width = (
-            width *
-            scale
-        )
+    # Nunca superar la escala solicitada.
+    real_scale = min(real_scale, float(scale))
 
-        new_height = (
-            height *
-            scale
-        )
+    final_width = max(1, int(round(width * real_scale)))
+    final_height = max(1, int(round(height * real_scale)))
 
-        output_pixels = (
-            new_width *
-            new_height
-        )
+    if final_width == width and final_height == height:
+        return image, 1.0
 
-    if scale > 1:
+    current = image.convert("RGBA")
+    current_w, current_h = current.size
 
-        image = image.resize(
-            (
-                new_width,
-                new_height
-            ),
+    # Escalado por etapas de hasta 1.5X. Suele producir un resultado
+    # visualmente más limpio que un único salto grande.
+    while current_w < final_width or current_h < final_height:
+        next_w = min(final_width, max(current_w + 1, int(round(current_w * 1.5))))
+        next_h = min(final_height, max(current_h + 1, int(round(current_h * 1.5))))
+
+        current = current.resize(
+            (next_w, next_h),
             Image.Resampling.LANCZOS
         )
 
-    return image, scale
+        # Nitidez suave sobre RGB, conservando el alfa original.
+        alpha = current.getchannel("A")
+        rgb = current.convert("RGB")
 
+        # Un pequeño refuerzo por etapa evita exagerar contornos.
+        rgb = ImageEnhance.Sharpness(rgb).enhance(1.08)
 
+        current = rgb.convert("RGBA")
+        current.putalpha(alpha)
+
+        current_w, current_h = current.size
+
+    return current, real_scale
 # ============================================================
 # GUARDAR PNG CON 300 DPI REALES
 # ============================================================
@@ -669,7 +668,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "5.5.0",
+                "5.6.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -702,7 +701,10 @@ async def process_image(
                 "11811",
 
                 "X-Pixels-Per-Meter-Y":
-                "11811"
+                "11811",
+
+                "X-Upscale-Engine":
+                "LANCZOS-STAGED-V5.6"
             }
         )
 
