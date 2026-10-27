@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V7.5 BORDE BLANCO LIMPIO
+# ZAFRIK IA PRO V7.6 LIMPIEZA DTF EQUILIBRADA
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.5.0",
+                "version": "7.6.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.5.0",
+                "version": "7.6.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "7.5.0"
+        "version": "7.6.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "7.5.0"
+        "version": "7.6.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V7.5 BORDE BLANCO LIMPIO
+    V7.6 LIMPIEZA DTF EQUILIBRADA
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1430,8 +1430,8 @@ def clean_connected_white_fringe(image: Image.Image, strength: int = 55) -> Imag
 
     # Trabajamos únicamente sobre la banda de 1 px; reduce costo y protege arte.
     out = img.load()
-    cutoff = int(228 - (strength * 0.48))   # 228 -> 180 aprox.
-    neutral_limit = int(18 + strength * 0.22)
+    cutoff = int(218 - (strength * 0.55))   # más efectivo con halo normal
+    neutral_limit = int(24 + strength * 0.24)
 
     for y in range(h):
         for x in range(w):
@@ -1448,51 +1448,57 @@ def clean_connected_white_fringe(image: Image.Image, strength: int = 55) -> Imag
             elif aa < 245 and mn >= max(150, cutoff - 25) and (mx - mn) <= neutral_limit + 12:
                 # Antialias claro: reducir alfa progresivamente.
                 whiteness = (mn - max(150, cutoff - 25)) / max(1, 255 - max(150, cutoff - 25))
-                reduce = int(aa * whiteness * (0.35 + 0.45 * strength / 100))
+                reduce = int(aa * whiteness * (0.50 + 0.45 * strength / 100))
                 out[x, y] = (rr, gg, bb, max(0, aa - reduce))
 
     return img
 
-def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False):
-    """
-    Elimina únicamente sombras grises claras conectadas al borde inferior.
-    Es conservador para no borrar zapatos/arte oscuro.
-    """
+def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False) -> Image.Image:
+    """Limpia sombra gris clara del suelo sin atacar colores fuertes del diseño."""
     if not enabled:
-        return image.convert("RGBA")
+        return image
 
-    rgba = image.convert("RGBA")
-    w, h = rgba.size
-    px = rgba.load()
+    img = image.convert("RGBA")
+    w, h = img.size
+    px = img.load()
+    y0 = int(h * 0.76)
 
-    # Solo revisar franja inferior 22%.
-    y0 = int(h * 0.78)
     mask = Image.new("L", (w, h), 0)
     mp = mask.load()
 
     for y in range(y0, h):
         for x in range(w):
             r, g, b, a = px[x, y]
-            if a == 0:
+            if a <= 8:
                 continue
-            mx, mn = max(r,g,b), min(r,g,b)
-            avg = (r+g+b)/3
-            # sombra gris clara/neutra, no color del dibujo
-            if (mx-mn) <= 28 and 120 <= avg <= 245:
-                mp[x,y] = 255
+            mx, mn = max(r, g, b), min(r, g, b)
+            spread = mx - mn
+            lum = (r * 30 + g * 59 + b * 11) // 100
+            if 125 <= lum <= 247 and spread <= 24:
+                mp[x, y] = 255
 
-    # Suavizar apenas y restar alfa en candidatos.
-    mask = mask.filter(ImageFilter.GaussianBlur(0.45))
-    alpha = rgba.getchannel("A")
-    inv = ImageChops.invert(mask)
-    alpha = ImageChops.multiply(alpha, inv)
-    rgba.putalpha(alpha)
-    return rgba
+    mask = mask.filter(ImageFilter.MaxFilter(3))
+    mask = mask.filter(ImageFilter.GaussianBlur(0.6))
+    mm = mask.load()
+    out = img.load()
 
+    for y in range(y0, h):
+        for x in range(w):
+            m = mm[x, y]
+            if m <= 10:
+                continue
+            r, g, b, a = out[x, y]
+            spread = max(r, g, b) - min(r, g, b)
+            lum = (r * 30 + g * 59 + b * 11) // 100
+            if lum >= 120 and spread <= 30:
+                fade = int(m * min(1.0, max(0.30, (lum - 105) / 115)))
+                new_a = max(0, a - fade)
+                if new_a < 22:
+                    new_a = 0
+                out[x, y] = (r, g, b, new_a)
 
-# ============================================================
-# PROCESAMIENTO PRINCIPAL
-# ============================================================
+    return img
+
 
 @app.post("/api/process")
 async def process_image(
@@ -1670,7 +1676,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "7.5.0",
+                "7.6.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1724,7 +1730,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V7.5",
+                "ZAFRIK-HD-V7.6",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
