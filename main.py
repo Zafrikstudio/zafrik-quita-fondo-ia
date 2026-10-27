@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V7.8 BORDE FINAL
+# ZAFRIK IA PRO V7.9 COLOR DE BORDE
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.8.0",
+                "version": "7.9.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.8.0",
+                "version": "7.9.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "7.8.0"
+        "version": "7.9.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "7.8.0"
+        "version": "7.9.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V7.8 BORDE FINAL
+    V7.9 COLOR DE BORDE
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1494,6 +1494,94 @@ def final_exterior_edge_cleanup(image: Image.Image, strength: int = 65) -> Image
                 out[x, y] = (rr, gg, bb, new_a)
     return img
 
+
+def decontaminate_edge_color_v79(image: Image.Image, strength: int = 65) -> Image.Image:
+    """
+    V7.9: corrige el COLOR del antialias exterior.
+    En vez de seguir recortando alfa, sustituye blanco/gris contaminado
+    por el color oscuro/real más cercano del propio diseño.
+    Solo trabaja en una banda estrecha junto a la transparencia.
+    """
+    img = image.convert("RGBA")
+    w, h = img.size
+    try:
+        strength = max(0, min(100, int(strength)))
+    except Exception:
+        strength = 65
+
+    if strength <= 0:
+        return img
+
+    _, _, _, alpha = img.split()
+    transparent = alpha.point(lambda p: 255 if p <= 18 else 0)
+    outside = transparent.filter(ImageFilter.MaxFilter(3))
+    visible = alpha.point(lambda p: 255 if p > 18 else 0)
+    band = ImageChops.multiply(outside, visible)
+
+    src_px = img.load()
+    band_px = band.load()
+    out = img.copy()
+    out_px = out.load()
+
+    # Solo píxeles claros/neutros del borde son candidatos.
+    light_cut = int(205 - strength * 0.18)
+    neutral_cut = int(34 + strength * 0.10)
+    blend = 0.45 + (strength / 100.0) * 0.35
+
+    for y in range(h):
+        y0 = max(0, y - 2)
+        y1 = min(h, y + 3)
+        for x in range(w):
+            if band_px[x, y] == 0:
+                continue
+
+            r, g, b, a = src_px[x, y]
+            lum = (r * 30 + g * 59 + b * 11) // 100
+            spread = max(r, g, b) - min(r, g, b)
+
+            if lum < light_cut or spread > neutral_cut:
+                continue
+
+            # Buscar dentro de 2 px un vecino opaco y más oscuro/colorido
+            # que represente el color real del contorno.
+            best = None
+            best_score = 10**9
+            x0 = max(0, x - 2)
+            x1 = min(w, x + 3)
+
+            for ny in range(y0, y1):
+                for nx in range(x0, x1):
+                    if nx == x and ny == y:
+                        continue
+                    nr, ng, nb, na = src_px[nx, ny]
+                    if na < 210:
+                        continue
+
+                    nlum = (nr * 30 + ng * 59 + nb * 11) // 100
+                    nspread = max(nr, ng, nb) - min(nr, ng, nb)
+
+                    # Debe ser claramente menos "fondo" que el candidato.
+                    if nlum >= lum - 18 and nspread < 35:
+                        continue
+
+                    dist = abs(nx - x) + abs(ny - y)
+                    score = dist * 40 + nlum - min(80, nspread)
+                    if score < best_score:
+                        best_score = score
+                        best = (nr, ng, nb)
+
+            if best is None:
+                continue
+
+            nr, ng, nb = best
+            # Mantener alfa existente: corregimos color, no mordemos el borde.
+            rr = int(r * (1.0 - blend) + nr * blend)
+            gg = int(g * (1.0 - blend) + ng * blend)
+            bb = int(b * (1.0 - blend) + nb * blend)
+            out_px[x, y] = (rr, gg, bb, a)
+
+    return out
+
 def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False) -> Image.Image:
     """V7.7: elimina sombra gris del suelo conservando zapatos y colores del diseño."""
     if not enabled:
@@ -1674,6 +1762,9 @@ async def process_image(
         # V7.8: pasada final conservadora solo sobre el borde exterior.
         result = final_exterior_edge_cleanup(result, halo)
 
+        # V7.9: descontaminar color gris/blanco del antialias exterior.
+        result = decontaminate_edge_color_v79(result, halo)
+
 
         # ====================================================
         # 5. MEJORA
@@ -1737,7 +1828,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "7.8.0",
+                "7.9.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1791,7 +1882,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V7.8",
+                "ZAFRIK-HD-V7.9",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
