@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V8.1 SELECCION CONECTADA
+# ZAFRIK IA PRO V8.1.1 SELECCION CONECTADA FIX
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "8.1.0",
+                "version": "8.1.1",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "8.1.0",
+                "version": "8.1.1",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "8.1.0"
+        "version": "8.1.1"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "8.1.0"
+        "version": "8.1.1"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V8.1 SELECCION CONECTADA
+    V8.1.1 SELECCION CONECTADA FIX
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1890,7 +1890,7 @@ async def process_image(
         result = cleanup_only_exterior_connected_v80(result, halo)
 
         # V8.1: selección manual conectada + antialias.
-        result = cleanup_manual_connected_antialias_v81(result, points, tolerance)
+        result = cleanup_manual_connected_antialias_v81(result, selected_background_points, bg_tolerance)
 
 
         # ====================================================
@@ -1955,7 +1955,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "8.1.0",
+                "8.1.1",
 
                 "X-Original-Width":
                 str(original_width),
@@ -2009,7 +2009,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V8.1",
+                "ZAFRIK-HD-V8.1.1",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
