@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V8.4 VECTOR PNG
+# ZAFRIK IA PRO V8.5 VECTOR PNG SUAVE
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "8.4.0",
+                "version": "8.5.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "8.4.0",
+                "version": "8.5.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "8.4.0"
+        "version": "8.5.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "8.4.0"
+        "version": "8.5.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V8.4 VECTOR PNG
+    V8.5 VECTOR PNG SUAVE
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1750,20 +1750,35 @@ def manual_connected_flood_v82(image: Image.Image, manual_points, tolerance: int
 
 
 def vectorize_to_png_v84(image: Image.Image, mode: str = "suave") -> Image.Image:
-    """Efecto vectorial opcional manteniendo salida PNG transparente."""
+    """
+    V8.5: vectorización visual suave para PNG.
+    Conserva más tonos, degradados y detalles.
+    """
     img = image.convert("RGBA")
     alpha = img.getchannel("A")
     mode = str(mode or "suave").lower().strip()
-    colors, blur, sharp = (12, 1.0, 135) if mode == "fuerte" else (24, 0.55, 105)
+
+    if mode == "fuerte":
+        colors, blur, sharp = 48, 0.32, 90
+    else:
+        colors, blur, sharp = 96, 0.16, 72
 
     rgb = Image.new("RGB", img.size, (255,255,255))
     rgb.paste(img.convert("RGB"), mask=alpha)
-    rgb = rgb.filter(ImageFilter.GaussianBlur(blur))
-    rgb = rgb.quantize(colors=colors, method=Image.Quantize.MEDIANCUT).convert("RGB")
-    rgb = rgb.filter(ImageFilter.UnsharpMask(radius=1.1, percent=sharp, threshold=3))
 
-    a = alpha.filter(ImageFilter.GaussianBlur(0.22))
-    a = a.point(lambda p: 0 if p < 10 else (255 if p > 246 else p))
+    if blur > 0:
+        rgb = rgb.filter(ImageFilter.GaussianBlur(blur))
+
+    rgb = rgb.quantize(
+        colors=colors,
+        method=Image.Quantize.FASTOCTREE
+    ).convert("RGB")
+
+    rgb = rgb.filter(
+        ImageFilter.UnsharpMask(radius=0.75, percent=sharp, threshold=2)
+    )
+
+    a = alpha.point(lambda p: 0 if p < 6 else (255 if p > 250 else p))
     out = rgb.convert("RGBA")
     out.putalpha(a)
     return out
@@ -2025,7 +2040,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "8.4.0",
+                "8.5.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -2079,7 +2094,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V8.4",
+                "ZAFRIK-HD-V8.5",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
