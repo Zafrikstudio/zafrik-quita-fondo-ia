@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V7.4</title>
+<title>ZAFRIK | ZAFRIK IA PRO V8.4</title>
 
 <style>
 *{box-sizing:border-box}
@@ -246,7 +246,7 @@ body > *:last-child{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V7.4
+  ZAFRIK IA PRO V8.4
  </span>
 
  <h1>
@@ -519,6 +519,29 @@ body > *:last-child{
    </div>
 
   </div>
+   <div class="control">
+    <div class="label">
+     <span>Vectorizar imagen</span>
+     <span class="value" id="vectorV">DESACTIVADO</span>
+    </div>
+    <label class="toggle">
+     <input type="checkbox" id="vectorizePNG">
+     <span class="switch"></span>
+     <span class="toggleText">
+      <strong>Vectorizar antes de descargar PNG</strong>
+      <span>Reconstruye colores y contornos. El archivo final sigue siendo PNG transparente a 300 DPI.</span>
+     </span>
+    </label>
+    <div style="margin-top:12px">
+     <label for="vectorMode" style="display:block;font-size:12px;font-weight:900;margin-bottom:8px">MODO DE VECTOR</label>
+     <select id="vectorMode" disabled>
+      <option value="suave" selected>Suave — ilustraciones y más colores</option>
+      <option value="fuerte">Fuerte — logos y diseños sólidos</option>
+     </select>
+    </div>
+   </div>
+
+
 
 
   <div class="control">
@@ -859,6 +882,16 @@ const premiumLock = document.getElementById("premiumLock");
 const pickBg = document.getElementById("pickBg");
 const pickCount = document.getElementById("pickCount");
 const clearPicks = document.getElementById("clearPicks");
+const vectorizePNG = document.getElementById("vectorizePNG");
+const vectorMode = document.getElementById("vectorMode");
+const vectorV = document.getElementById("vectorV");
+
+if(vectorizePNG){
+  vectorizePNG.addEventListener("change",()=>{
+    if(vectorMode) vectorMode.disabled=!vectorizePNG.checked;
+    if(vectorV) vectorV.textContent=vectorizePNG.checked ? "ACTIVADO" : "DESACTIVADO";
+  });
+}
 
 function setAuthMode(name){
   authMode = name;
@@ -1246,13 +1279,15 @@ processBtn.addEventListener("click", async () => {
     fd.append("precision", document.getElementById("precision").value);
     fd.append("halo", document.getElementById("halo").value);
     fd.append("remove_shadow", document.getElementById("removeShadow").checked ? "true" : "false");
+    fd.append("vectorize_png", vectorizePNG && vectorizePNG.checked ? "true" : "false");
+    fd.append("vector_mode", vectorMode ? vectorMode.value : "suave");
 
     progress(20, "Enviando imagen al servidor...");
     showStatus("ZAFRIK IA PRO está procesando la imagen...");
 
     timers.push(setTimeout(() => progress(38, "IA eliminando fondo..."), 900));
     timers.push(setTimeout(() => progress(58, "Preparando transparencia..."), 2200));
-    timers.push(setTimeout(() => progress(72, "Mejorando imagen..."), 3800));
+    timers.push(setTimeout(() => progress(72, vectorizePNG && vectorizePNG.checked ? "Vectorizando imagen para PNG..." : "Mejorando imagen..."), 3800));
     timers.push(setTimeout(() => progress(84, "Preparando resolución final..."), 5500));
 
     const response = await fetch(API_URL + "/api/process", {
@@ -1414,7 +1449,7 @@ loadAccount();
 
 <script>
 /* ==========================================================
-   ZAFRIK IA PRO V7.4
+   ZAFRIK IA PRO V8.4
    ALTURA AUTOMÁTICA PARA IFRAME DE HOSTINGER
 ========================================================== */
 (function(){
