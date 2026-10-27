@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V7.6 LIMPIEZA DTF EQUILIBRADA
+# ZAFRIK IA PRO V7.7 SOMBRA Y BORDE
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.6.0",
+                "version": "7.7.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.6.0",
+                "version": "7.7.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "7.6.0"
+        "version": "7.7.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "7.6.0"
+        "version": "7.7.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V7.6 LIMPIEZA DTF EQUILIBRADA
+    V7.7 SOMBRA Y BORDE
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1430,8 +1430,8 @@ def clean_connected_white_fringe(image: Image.Image, strength: int = 55) -> Imag
 
     # Trabajamos únicamente sobre la banda de 1 px; reduce costo y protege arte.
     out = img.load()
-    cutoff = int(218 - (strength * 0.55))   # más efectivo con halo normal
-    neutral_limit = int(24 + strength * 0.24)
+    cutoff = int(214 - (strength * 0.58))   # V7.7: borde exterior más limpio
+    neutral_limit = int(27 + strength * 0.25)
 
     for y in range(h):
         for x in range(w):
@@ -1454,14 +1454,16 @@ def clean_connected_white_fringe(image: Image.Image, strength: int = 55) -> Imag
     return img
 
 def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False) -> Image.Image:
-    """Limpia sombra gris clara del suelo sin atacar colores fuertes del diseño."""
+    """V7.7: elimina sombra gris del suelo conservando zapatos y colores del diseño."""
     if not enabled:
         return image
 
     img = image.convert("RGBA")
     w, h = img.size
     px = img.load()
-    y0 = int(h * 0.76)
+
+    # Trabajar únicamente en el 19% inferior.
+    y0 = int(h * 0.81)
 
     mask = Image.new("L", (w, h), 0)
     mp = mask.load()
@@ -1469,33 +1471,48 @@ def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False) -> I
     for y in range(y0, h):
         for x in range(w):
             r, g, b, a = px[x, y]
-            if a <= 8:
+            if a <= 6:
                 continue
-            mx, mn = max(r, g, b), min(r, g, b)
+
+            mx = max(r, g, b)
+            mn = min(r, g, b)
             spread = mx - mn
             lum = (r * 30 + g * 59 + b * 11) // 100
-            if 125 <= lum <= 247 and spread <= 24:
+
+            # Gris/blanco poco saturado típico de sombra sobre fondo claro.
+            if 105 <= lum <= 250 and spread <= 34:
                 mp[x, y] = 255
 
-    mask = mask.filter(ImageFilter.MaxFilter(3))
-    mask = mask.filter(ImageFilter.GaussianBlur(0.6))
+    # Unir el tramado de sombra horizontal.
+    mask = mask.filter(ImageFilter.MaxFilter(5))
+    mask = mask.filter(ImageFilter.GaussianBlur(0.8))
     mm = mask.load()
     out = img.load()
 
     for y in range(y0, h):
+        # Mayor fuerza cuanto más abajo estamos.
+        yf = (y - y0) / max(1, h - y0)
         for x in range(w):
             m = mm[x, y]
-            if m <= 10:
+            if m <= 8:
                 continue
+
             r, g, b, a = out[x, y]
             spread = max(r, g, b) - min(r, g, b)
             lum = (r * 30 + g * 59 + b * 11) // 100
-            if lum >= 120 and spread <= 30:
-                fade = int(m * min(1.0, max(0.30, (lum - 105) / 115)))
-                new_a = max(0, a - fade)
-                if new_a < 22:
-                    new_a = 0
-                out[x, y] = (r, g, b, new_a)
+
+            # Proteger píxeles oscuros y colores saturados de zapatos/arte.
+            if lum < 105 or spread > 38:
+                continue
+
+            force = 0.72 + 0.28 * yf
+            fade = int(m * force)
+            new_a = max(0, a - fade)
+
+            if new_a < 38:
+                new_a = 0
+
+            out[x, y] = (r, g, b, new_a)
 
     return img
 
@@ -1676,7 +1693,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "7.6.0",
+                "7.7.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1730,7 +1747,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V7.6",
+                "ZAFRIK-HD-V7.7",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
