@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V7.7 SOMBRA Y BORDE
+# ZAFRIK IA PRO V7.8 BORDE FINAL
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.7.0",
+                "version": "7.8.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "7.7.0",
+                "version": "7.8.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "7.7.0"
+        "version": "7.8.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "7.7.0"
+        "version": "7.8.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V7.7 SOMBRA Y BORDE
+    V7.8 BORDE FINAL
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1453,6 +1453,47 @@ def clean_connected_white_fringe(image: Image.Image, strength: int = 55) -> Imag
 
     return img
 
+
+def final_exterior_edge_cleanup(image: Image.Image, strength: int = 65) -> Image.Image:
+    """V7.8: limpia únicamente la franja clara/gris pegada al exterior transparente."""
+    img = image.convert("RGBA")
+    r, g, b, a = img.split()
+    try:
+        strength = max(0, min(100, int(strength)))
+    except Exception:
+        strength = 65
+    if strength <= 0:
+        return img
+
+    transparent = a.point(lambda p: 255 if p <= 12 else 0)
+    outside_band = transparent.filter(ImageFilter.MaxFilter(3))
+    visible = a.point(lambda p: 255 if p > 12 else 0)
+    band = ImageChops.multiply(outside_band, visible)
+
+    bp = band.load()
+    out = img.load()
+    w, h = img.size
+    light_cut = int(205 - strength * 0.28)
+    neutral_cut = int(30 + strength * 0.12)
+
+    for y in range(h):
+        for x in range(w):
+            if bp[x, y] == 0:
+                continue
+            rr, gg, bb, aa = out[x, y]
+            spread = max(rr, gg, bb) - min(rr, gg, bb)
+            lum = (rr * 30 + gg * 59 + bb * 11) // 100
+
+            if lum >= light_cut and spread <= neutral_cut:
+                out[x, y] = (rr, gg, bb, 0)
+            elif aa < 245 and lum >= light_cut - 28 and spread <= neutral_cut + 10:
+                factor = min(0.88, 0.42 + strength / 220.0)
+                new_a = int(aa * (1.0 - factor))
+                if new_a < 24:
+                    new_a = 0
+                out[x, y] = (rr, gg, bb, new_a)
+    return img
+
 def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False) -> Image.Image:
     """V7.7: elimina sombra gris del suelo conservando zapatos y colores del diseño."""
     if not enabled:
@@ -1630,6 +1671,9 @@ async def process_image(
             remove_shadow
         )
 
+        # V7.8: pasada final conservadora solo sobre el borde exterior.
+        result = final_exterior_edge_cleanup(result, halo)
+
 
         # ====================================================
         # 5. MEJORA
@@ -1693,7 +1737,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "7.7.0",
+                "7.8.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -1747,7 +1791,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V7.7",
+                "ZAFRIK-HD-V7.8",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
