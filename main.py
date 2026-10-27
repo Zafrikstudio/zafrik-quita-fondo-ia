@@ -18,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V8.1.1 SELECCION CONECTADA FIX
+# ZAFRIK IA PRO V8.2 FLOOD MANUAL SEGURO
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -646,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "8.1.1",
+                "version": "8.2.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -682,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "8.1.1",
+                "version": "8.2.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -704,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "8.1.1"
+        "version": "8.2.0"
     }
 
 
@@ -724,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "8.1.1"
+        "version": "8.2.0"
     }
 
 
@@ -1181,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V8.1.1 SELECCION CONECTADA FIX
+    V8.2 FLOOD MANUAL SEGURO
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1647,60 +1647,105 @@ def cleanup_only_exterior_connected_v80(image: Image.Image, strength: int = 65) 
     return out
 
 
-def cleanup_manual_connected_antialias_v81(image: Image.Image, manual_points, strength: int = 20) -> Image.Image:
-    """V8.1: cada punto manual limpia su región conectada y el antialias inmediato."""
+def manual_connected_flood_v82(image: Image.Image, manual_points, tolerance: int = 20) -> Image.Image:
+    """
+    V8.2: selección manual segura.
+    Cada clic inicia un flood-fill LOCAL desde ese punto y solo avanza a píxeles
+    vecinos parecidos al color seleccionado. Nunca busca ese color por toda la imagen.
+    """
     if not manual_points:
         return image
+
     img = image.convert("RGBA")
     w, h = img.size
-    try: tol = max(4, min(70, int(strength)))
-    except Exception: tol = 20
+    try:
+        tol = max(4, min(45, int(tolerance)))
+    except Exception:
+        tol = 20
+
+    # Umbral conservador. 20% -> aprox. 28 niveles RGB.
+    threshold = 10 + int(tol * 0.90)
+    max_pixels = max(5000, int(w * h * 0.35))
 
     for p in manual_points:
         try:
-            sx = max(0, min(w-1, int(round(float(p.get("x",0))*(w-1)))))
-            sy = max(0, min(h-1, int(round(float(p.get("y",0))*(h-1)))))
+            sx = max(0, min(w - 1, int(round(float(p.get("x", 0)) * (w - 1)))))
+            sy = max(0, min(h - 1, int(round(float(p.get("y", 0)) * (h - 1)))))
         except Exception:
             continue
 
         px = img.load()
-        sr,sg,sb,sa = px[sx,sy]
-        threshold = 12 + int(tol*1.15)
-
-        candidate = Image.new("L",(w,h),0)
-        cp = candidate.load()
-        for y in range(h):
-            for x in range(w):
-                r,g,b,a = px[x,y]
-                if a <= 4: continue
-                if max(abs(r-sr),abs(g-sg),abs(b-sb)) <= threshold:
-                    cp[x,y]=255
-
-        # Connected component from the selected seed.
-        work = candidate.point(lambda v: 0 if v else 255)
-        try:
-            ImageDraw.floodfill(work,(sx,sy),128,thresh=0)
-        except Exception:
+        sr, sg, sb, sa = px[sx, sy]
+        if sa <= 4:
             continue
-        region = work.point(lambda v: 255 if v==128 else 0)
-        grown = region.filter(ImageFilter.MaxFilter(3))
-        rp,gp = region.load(),grown.load()
+
+        # BFS/Flood-fill real: solo vecinos conectados.
+        visited = bytearray(w * h)
+        stack = [(sx, sy)]
+        region = []
+        seed_lum = (sr * 30 + sg * 59 + sb * 11) // 100
+
+        while stack and len(region) < max_pixels:
+            x, y = stack.pop()
+            idx = y * w + x
+            if visited[idx]:
+                continue
+            visited[idx] = 1
+
+            r, g, b, a = px[x, y]
+            if a <= 4:
+                continue
+
+            # Comparación con el color del clic + luminancia.
+            d = max(abs(r - sr), abs(g - sg), abs(b - sb))
+            lum = (r * 30 + g * 59 + b * 11) // 100
+            if d > threshold or abs(lum - seed_lum) > threshold + 8:
+                continue
+
+            region.append((x, y))
+
+            if x > 0: stack.append((x - 1, y))
+            if x + 1 < w: stack.append((x + 1, y))
+            if y > 0: stack.append((x, y - 1))
+            if y + 1 < h: stack.append((x, y + 1))
+
+        if not region:
+            continue
+
+        # Safety: if a selected component is implausibly huge, do not erase it.
+        if len(region) >= max_pixels:
+            continue
+
+        mask = Image.new("L", (w, h), 0)
+        mp = mask.load()
+        for x, y in region:
+            mp[x, y] = 255
+
+        # One-pixel antialias ring only.
+        grown = mask.filter(ImageFilter.MaxFilter(3))
+        gp = grown.load()
         out = img.load()
 
+        for x, y in region:
+            r, g, b, a = out[x, y]
+            out[x, y] = (r, g, b, 0)
+
         for y in range(h):
             for x in range(w):
-                if rp[x,y]:
-                    r,g,b,a=out[x,y]
-                    out[x,y]=(r,g,b,0)
-                elif gp[x,y]:
-                    r,g,b,a=out[x,y]
-                    d=max(abs(r-sr),abs(g-sg),abs(b-sb))
-                    spread=max(r,g,b)-min(r,g,b)
-                    lum=(r*30+g*59+b*11)//100
-                    if d <= threshold+22 or (lum>=145 and spread<=38):
-                        na=int(a*0.18)
-                        if na<30: na=0
-                        out[x,y]=(r,g,b,na)
+                if gp[x, y] == 0 or mp[x, y] != 0:
+                    continue
+                r, g, b, a = out[x, y]
+                d = max(abs(r - sr), abs(g - sg), abs(b - sb))
+                spread = max(r, g, b) - min(r, g, b)
+                lum = (r * 30 + g * 59 + b * 11) // 100
+
+                # Only soften neighboring antialias similar to selected region.
+                if d <= threshold + 18 or (seed_lum > 145 and lum > 135 and spread <= 32):
+                    na = int(a * 0.28)
+                    if na < 26:
+                        na = 0
+                    out[x, y] = (r, g, b, na)
+
     return img
 
 def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False) -> Image.Image:
@@ -1889,8 +1934,8 @@ async def process_image(
         # V8.0: limpieza fuerte exclusivamente donde el diseño toca transparencia.
         result = cleanup_only_exterior_connected_v80(result, halo)
 
-        # V8.1: selección manual conectada + antialias.
-        result = cleanup_manual_connected_antialias_v81(result, selected_background_points, bg_tolerance)
+        # V8.2: clic manual = flood-fill local conectado, nunca búsqueda global.
+        result = manual_connected_flood_v82(result, selected_background_points, bg_tolerance)
 
 
         # ====================================================
@@ -1955,7 +2000,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "8.1.1",
+                "8.2.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -2009,7 +2054,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V8.1.1",
+                "ZAFRIK-HD-V8.2",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
