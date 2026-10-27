@@ -1,6 +1,5 @@
 import os
 import io
-import html as html_lib
 import json
 import struct
 import zlib
@@ -19,7 +18,7 @@ from fastapi.responses import Response, JSONResponse, FileResponse
 
 
 # ============================================================
-# ZAFRIK IA PRO V8.3 VECTOR SVG
+# ZAFRIK IA PRO V8.4 VECTOR PNG
 # Remove.bg + mejora de imagen + escalado + interfaz web
 # Optimizado para Render Free 512 MB
 # ============================================================
@@ -647,7 +646,7 @@ def admin_page():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "8.3.0",
+                "version": "8.4.0",
                 "message": "No se encontró public/admin.html"
             }
         )
@@ -683,7 +682,7 @@ def home():
             content={
                 "ok": False,
                 "app": "ZAFRIK IA PRO",
-                "version": "8.3.0",
+                "version": "8.4.0",
                 "message": "No se encontró public/index.html"
             }
         )
@@ -705,7 +704,7 @@ def health():
         "ok": True,
         "status": "healthy",
         "app": "ZAFRIK IA PRO",
-        "version": "8.3.0"
+        "version": "8.4.0"
     }
 
 
@@ -725,7 +724,7 @@ def api_status():
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "auth_enabled": True,
         "free_limit": FREE_LIMIT,
-        "version": "8.3.0"
+        "version": "8.4.0"
     }
 
 
@@ -1182,7 +1181,7 @@ def save_png_300_dpi(image: Image.Image) -> bytes:
 
 def remove_edge_connected_background(data: bytes, tolerance: int = 18, manual_points=None):
     """
-    V8.3 VECTOR SVG
+    V8.4 VECTOR PNG
     - El fondo exterior se elimina por conectividad.
     - Cada clic manual elimina solamente su isla conectada.
     - Los clics demasiado cerca de líneas/detalles se ignoran automáticamente.
@@ -1749,6 +1748,26 @@ def manual_connected_flood_v82(image: Image.Image, manual_points, tolerance: int
 
     return img
 
+
+def vectorize_to_png_v84(image: Image.Image, mode: str = "suave") -> Image.Image:
+    """Efecto vectorial opcional manteniendo salida PNG transparente."""
+    img = image.convert("RGBA")
+    alpha = img.getchannel("A")
+    mode = str(mode or "suave").lower().strip()
+    colors, blur, sharp = (12, 1.0, 135) if mode == "fuerte" else (24, 0.55, 105)
+
+    rgb = Image.new("RGB", img.size, (255,255,255))
+    rgb.paste(img.convert("RGB"), mask=alpha)
+    rgb = rgb.filter(ImageFilter.GaussianBlur(blur))
+    rgb = rgb.quantize(colors=colors, method=Image.Quantize.MEDIANCUT).convert("RGB")
+    rgb = rgb.filter(ImageFilter.UnsharpMask(radius=1.1, percent=sharp, threshold=3))
+
+    a = alpha.filter(ImageFilter.GaussianBlur(0.22))
+    a = a.point(lambda p: 0 if p < 10 else (255 if p > 246 else p))
+    out = rgb.convert("RGBA")
+    out.putalpha(a)
+    return out
+
 def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False) -> Image.Image:
     """V7.7: elimina sombra gris del suelo conservando zapatos y colores del diseño."""
     if not enabled:
@@ -1813,122 +1832,6 @@ def remove_ground_shadow_precise(image: Image.Image, enabled: bool = False) -> I
     return img
 
 
-
-def _svg_hex(rgb):
-    return "#{:02x}{:02x}{:02x}".format(*rgb)
-
-def vectorize_png_to_svg_v83(image_bytes: bytes, colors: int = 12, max_side: int = 700) -> bytes:
-    """
-    V8.3: vectorización ligera por paleta y franjas conectadas.
-    Genera SVG REAL (formas vectoriales), pensado para logos/ilustraciones.
-    No usa Torch/ONNX y es compatible con Render Free.
-    """
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
-
-    # Reducir resolución de trazado para mantener SVG manejable.
-    w, h = img.size
-    scale = min(1.0, float(max_side) / max(w, h))
-    if scale < 1.0:
-        tw = max(1, int(round(w * scale)))
-        th = max(1, int(round(h * scale)))
-        img = img.resize((tw, th), Image.Resampling.LANCZOS)
-
-    w, h = img.size
-    rgba = img.load()
-
-    # Fondo temporal blanco solo para cuantizar RGB; alpha se conserva aparte.
-    rgb = Image.new("RGB", (w, h), (255, 255, 255))
-    rgb.paste(img.convert("RGB"), mask=img.getchannel("A"))
-
-    colors = max(4, min(24, int(colors)))
-    q = rgb.quantize(colors=colors, method=Image.Quantize.MEDIANCUT).convert("RGB")
-    qp = q.load()
-
-    # SVG en coordenadas del trazado, escalable sin perder estructura vectorial.
-    parts = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" '
-        f'width="{w}" height="{h}" preserveAspectRatio="xMidYMid meet">',
-        '<g shape-rendering="geometricPrecision">'
-    ]
-
-    # Agrupar corridas horizontales del mismo color en paths.
-    by_color = {}
-    alpha_cut = 28
-
-    for y in range(h):
-        x = 0
-        while x < w:
-            a = rgba[x, y][3]
-            if a <= alpha_cut:
-                x += 1
-                continue
-
-            color = qp[x, y]
-            x0 = x
-            # Mantener corrida mientras color y visibilidad sean compatibles.
-            while x + 1 < w:
-                na = rgba[x + 1, y][3]
-                if na <= alpha_cut or qp[x + 1, y] != color:
-                    break
-                x += 1
-
-            width = x - x0 + 1
-            by_color.setdefault(color, []).append((x0, y, width))
-            x += 1
-
-    # Un path por color, con subpaths rectangulares. Mucho más liviano que un rect por píxel.
-    for color, runs in by_color.items():
-        d = []
-        for x, y, width in runs:
-            d.append(f"M{x} {y}h{width}v1h-{width}z")
-        parts.append(f'<path fill="{_svg_hex(color)}" d="{"".join(d)}"/>')
-
-    parts.append("</g></svg>")
-    return "\n".join(parts).encode("utf-8")
-
-
-@app.post("/api/vectorize")
-async def api_vectorize(
-    image: UploadFile = File(...),
-    vector_mode: str = Form("suave"),
-):
-    """
-    Convierte PNG/JPG procesado a SVG vectorial ligero.
-    vector_mode: suave | fuerte
-    """
-    try:
-        raw = await image.read()
-        if not raw:
-            return JSONResponse({"detail": "Archivo vacío."}, status_code=400)
-
-        # Modos: suave conserva más tonos; fuerte simplifica logos.
-        mode = str(vector_mode or "suave").lower().strip()
-        if mode == "fuerte":
-            colors = 8
-            max_side = 620
-        else:
-            colors = 16
-            max_side = 760
-
-        svg = vectorize_png_to_svg_v83(raw, colors=colors, max_side=max_side)
-
-        return Response(
-            content=svg,
-            media_type="image/svg+xml",
-            headers={
-                "Content-Disposition": 'attachment; filename="ZAFRIK-VECTOR.svg"',
-                "X-Vector-Mode": mode,
-                "X-Vector-Colors": str(colors),
-            },
-        )
-    except Exception as e:
-        return JSONResponse(
-            {"detail": f"No se pudo vectorizar la imagen: {str(e)}"},
-            status_code=500,
-        )
-
-
 @app.post("/api/process")
 async def process_image(
 
@@ -1953,6 +1856,8 @@ async def process_image(
     halo: int = Form(70),
 
     remove_shadow: bool = Form(False),
+    vectorize_png: bool = Form(False),
+    vector_mode: str = Form("suave"),
 
     authorization: str | None = Header(default=None)
 
@@ -2066,8 +1971,11 @@ async def process_image(
 
 
         # ====================================================
-        # 5. ESCALADO
+        # 5. VECTOR PNG OPCIONAL + ESCALADO
         # ====================================================
+
+        if vectorize_png:
+            result = vectorize_to_png_v84(result, vector_mode)
 
         result, real_scale = (
             resize_safe(
@@ -2117,7 +2025,7 @@ async def process_image(
                 'inline; filename="zafrik-ia-pro.png"',
 
                 "X-Zafrik-Version":
-                "8.3.0",
+                "8.4.0",
 
                 "X-Original-Width":
                 str(original_width),
@@ -2171,7 +2079,7 @@ async def process_image(
                 "11811",
 
                 "X-Upscale-Engine":
-                "ZAFRIK-HD-V8.3",
+                "ZAFRIK-HD-V8.4",
 
                 "X-User-Plan":
                 str(uinfo["plan"]),
