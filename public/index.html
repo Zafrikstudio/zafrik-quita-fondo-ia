@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ZAFRIK | ZAFRIK IA PRO V8.4</title>
+<title>ZAFRIK | ZAFRIK IA PRO V8.5</title>
 
 <style>
 *{box-sizing:border-box}
@@ -246,7 +246,7 @@ body > *:last-child{
 <section class="hero">
 
  <span class="badge">
-  ZAFRIK IA PRO V8.4
+  ZAFRIK IA PRO V8.5
  </span>
 
  <h1>
@@ -370,7 +370,7 @@ body > *:last-child{
    <div class="label">
     <span>Eliminar halo</span>
     <span class="value" id="haloV">
-     55%
+     65%
     </span>
    </div>
 
@@ -379,7 +379,7 @@ body > *:last-child{
     type="range"
     min="0"
     max="100"
-    value="55"
+    value="65"
    >
 
   </div>
@@ -389,7 +389,7 @@ body > *:last-child{
 
    <div class="label">
     <span>Tolerancia precisa de fondo</span>
-    <span class="value" id="bgTolV">18%</span>
+    <span class="value" id="bgTolV">25%</span>
    </div>
 
    <input
@@ -397,7 +397,7 @@ body > *:last-child{
     type="range"
     min="0"
     max="100"
-    value="18"
+    value="25"
    >
 
    <label style="display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:12px;font-weight:800;line-height:1.4;cursor:pointer">
@@ -491,15 +491,13 @@ body > *:last-child{
    <div class="label">
     <span>Resolución final</span>
     <span class="value" id="scaleV">
-     1X
+     4X
     </span>
    </div>
 
    <div class="scale">
 
-    <button
-     class="active"
-     data-scale="1"
+    <button data-scale="1"
     >
      1X
     </button>
@@ -512,7 +510,7 @@ body > *:last-child{
      3X
     </button>
 
-    <button data-scale="4">
+    <button class="active" data-scale="4">
      4X
     </button>
 
@@ -859,7 +857,7 @@ let selectedFile = null;
 let resultBlob = null;
 let resultURL = null;
 let beforeURL = null;
-let scale = 1;
+let scale = 4;
 let hdMode = "ILUSTRACION";
 let mode = "DTF";
 let authMode = "register";
@@ -1449,7 +1447,7 @@ loadAccount();
 
 <script>
 /* ==========================================================
-   ZAFRIK IA PRO V8.4
+   ZAFRIK IA PRO V8.5
    ALTURA AUTOMÁTICA PARA IFRAME DE HOSTINGER
 ========================================================== */
 (function(){
